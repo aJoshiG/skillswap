@@ -1,6 +1,22 @@
 import { Skill } from './user.model';
 
-export type SessionStatus = 'proposed' | 'scheduled' | 'completed' | 'declined' | 'cancelled';
+export type SessionStatus =
+  'proposed' | 'scheduled' | 'completed' | 'declined' | 'cancelled' | 'expired';
+
+/** Mirrors the server's session sweeper, counted from when a session ends. */
+export const AUTO_COMPLETE_AFTER_HOURS = 72;
+export const AUTO_EXPIRE_AFTER_DAYS = 7;
+
+/** When a session ends (start + duration). */
+export function sessionEnd(s: Pick<Session, 'scheduledAt' | 'durationMinutes'>): Date {
+  return new Date(new Date(s.scheduledAt).getTime() + s.durationMinutes * 60_000);
+}
+
+/** When the sweeper will resolve a started session: auto-complete if anyone confirmed, else expire. */
+export function autoResolveAt(s: Session): Date {
+  const hours = s.confirmedBy.length ? AUTO_COMPLETE_AFTER_HOURS : AUTO_EXPIRE_AFTER_DAYS * 24;
+  return new Date(sessionEnd(s).getTime() + hours * 3_600_000);
+}
 export type SessionAction = 'accept' | 'decline' | 'cancel' | 'confirm';
 export type SessionScope = 'active' | 'history';
 export type SessionMode = 'online' | 'in-person';
@@ -27,8 +43,12 @@ export interface Session {
   proposedBy: string;
   status: SessionStatus;
   confirmedBy: string[];
+  /** When the proposal was accepted or declined (null while still proposed). */
+  respondedAt: string | null;
   completedAt: string | null;
   cancelledBy: string | null;
+  /** True when the sweeper (not a person) completed or expired it. */
+  autoResolved?: boolean;
   createdAt: string;
   /** On completed sessions: my review of the other person, or null if I haven't reviewed yet. */
   myReview?: { rating: number; comment: string } | null;
@@ -70,7 +90,15 @@ export interface CreditSummary {
 /** Pushed over the socket to the other participant whenever a session changes. */
 export interface SessionEvent {
   session: Session;
-  action: 'proposed' | 'accepted' | 'declined' | 'cancelled' | 'confirmed' | 'completed';
+  action:
+    | 'proposed'
+    | 'accepted'
+    | 'declined'
+    | 'cancelled'
+    | 'confirmed'
+    | 'completed'
+    | 'auto-completed'
+    | 'expired';
   by: string;
 }
 

@@ -18,7 +18,11 @@ const REQUEST_STATUS = ['pending', 'accepted', 'declined', 'cancelled'];
 // Time credits: 1 hour of teaching = 1 credit. New users start with a few to learn with first.
 const WELCOME_CREDITS = 2;
 const SESSION_DURATIONS = [30, 60, 90, 120]; // minutes
-const SESSION_STATUS = ['proposed', 'scheduled', 'completed', 'declined', 'cancelled'];
+const SESSION_STATUS = ['proposed', 'scheduled', 'completed', 'declined', 'cancelled', 'expired'];
+// Auto-resolution (the session sweeper), counted from when a session ends:
+// one confirmation → completed and paid after this long; no confirmations → expired and refunded.
+const AUTO_COMPLETE_AFTER_HOURS = 72;
+const AUTO_EXPIRE_AFTER_DAYS = 7;
 const CREDIT_TYPES = ['welcome', 'session-hold', 'session-refund', 'session-earned'];
 // Reputation: a Bayesian average pulls ratings with few reviews toward this prior, so one
 // 5-star review doesn't outrank a teacher with many 4.8s. New users count as the prior mean.
@@ -33,4 +37,6 @@ module.exports = {
   SESSION_STATUS,
   CREDIT_TYPES,
   REVIEW_PRIOR,
+  AUTO_COMPLETE_AFTER_HOURS,
+  AUTO_EXPIRE_AFTER_DAYS,
 };

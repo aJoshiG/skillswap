@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { errorMessage } from '../../core/models/api.model';
 import {
   CreditEntry,
+  autoResolveAt,
   CreditSummary,
   Session,
   SessionAction,
@@ -172,7 +173,9 @@ import { ReviewModal } from './review-modal';
                             </button>
                           }
                           @case ('confirm') {
-                            <span class="text-sm font-medium text-slate-700">Did it happen?</span>
+                            <span class="text-sm font-medium text-slate-700">{{
+                              confirmPrompt(s)
+                            }}</span>
                             <button
                               class="btn-primary btn-sm"
                               [disabled]="busy() === s._id"
@@ -183,7 +186,8 @@ import { ReviewModal } from './review-modal';
                           }
                           @case ('waiting-confirm') {
                             <span class="text-sm text-slate-500">
-                              You confirmed · waiting for {{ firstName(other(s).name) }}
+                              You confirmed · waiting for {{ firstName(other(s).name) }} · completes
+                              automatically {{ resolveAt(s) | date: 'EEE d MMM' }}
                             </span>
                           }
                         }
@@ -360,6 +364,7 @@ export class Sessions {
       completed: 'Completed',
       declined: 'Declined',
       cancelled: 'Cancelled',
+      expired: 'Expired',
     }[s.status];
   }
 
@@ -380,15 +385,34 @@ export class Sessions {
     const amount = this.label(s.credits);
     if (s.status === 'completed')
       return this.iAmLearner(s) ? `${amount} spent` : `+${amount} earned`;
+    if (s.status === 'expired') {
+      return s.confirmedBy.length || !s.respondedAt ? amount : `${amount} refunded`;
+    }
     if (s.status === 'declined' || s.status === 'cancelled') return amount;
     return this.iAmLearner(s) ? `costs you ${amount}` : `you earn ${amount}`;
   }
 
   protected creditStyle(s: Session): string {
     if (s.status === 'completed' && !this.iAmLearner(s)) return 'font-medium text-emerald-700';
-    if (s.status === 'declined' || s.status === 'cancelled') return 'line-through';
+    if (s.status === 'declined' || s.status === 'cancelled' || s.status === 'expired')
+      return 'line-through';
     return '';
   }
+
+  /** "Did it happen?", plus the auto-resolution deadline so nobody is surprised. */
+  protected confirmPrompt(s: Session): string {
+    const when = new Date(autoResolveAt(s)).toLocaleDateString(undefined, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    });
+    const name = this.firstName(this.other(s).name);
+    return s.confirmedBy.length
+      ? `${name} confirmed it happened. Confirm too, or it completes automatically ${when}.`
+      : `Did it happen? Confirm by ${when}, or it expires and the credits are refunded.`;
+  }
+
+  protected resolveAt = autoResolveAt;
 
   protected duration(minutes: number): string {
     return minutes < 60 ? `${minutes} min` : `${minutes / 60} h`;
@@ -403,7 +427,7 @@ export class Sessions {
       case 'session-hold':
         return `Held for ${s?.skill.name} with ${other}`;
       case 'session-refund':
-        return `Refund: ${s?.skill.name} with ${other} cancelled`;
+        return `Refund: ${s?.skill.name} with ${other}`;
       default:
         return `Taught ${s?.skill.name} to ${other}`;
     }

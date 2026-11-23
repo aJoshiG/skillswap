@@ -36,6 +36,8 @@ const sessionSchema = new mongoose.Schema(
     respondedAt: { type: Date, default: null },
     completedAt: { type: Date, default: null },
     cancelledBy: { type: ObjectId, ref: 'User', default: null },
+    // Set when the session sweeper (not a person) completed or expired it.
+    autoResolved: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

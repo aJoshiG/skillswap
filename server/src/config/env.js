@@ -17,6 +17,8 @@ const env = {
   mongoUri: required('MONGO_URI', 'set-by-test-setup'),
   // Render sets RENDER_EXTERNAL_URL (e.g. https://skillswap.onrender.com) automatically.
   clientUrl: process.env.CLIENT_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:4200',
+  // How often the session sweeper runs (minutes); 0 turns it off.
+  sessionSweepMinutes: Number(process.env.SESSION_SWEEP_MINUTES ?? 15),
   // Built Angular app to serve from this server (production / single-service deploys).
   clientDist:
     process.env.CLIENT_DIST ||

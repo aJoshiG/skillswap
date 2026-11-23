@@ -109,6 +109,10 @@ export class SessionService {
         return `${by} cancelled the ${what}`;
       case 'confirmed':
         return `${by} confirmed the ${what} took place. Confirm it too to complete it.`;
+      case 'auto-completed':
+        return `${what} completed automatically: ${creditLabel(s.credits)} paid to ${s.teacher.name}`;
+      case 'expired':
+        return `${what} expired without confirmation: ${creditLabel(s.credits)} refunded to ${s.learner.name}`;
       default:
         return `${what} completed: ${creditLabel(s.credits)} paid to ${s.teacher.name}`;
     }

@@ -3,6 +3,7 @@ const env = require('./config/env');
 const { connectDB, disconnectDB } = require('./config/db');
 const { createApp } = require('./app');
 const { initSockets } = require('./sockets');
+const { startSessionSweeper } = require('./jobs/sessionSweeper');
 
 async function start() {
   await connectDB(env.mongoUri);
@@ -15,8 +16,15 @@ async function start() {
     console.log(`SkillSwap API listening on http://localhost:${env.port}`);
   });
 
+  // Auto-resolves sessions nobody confirmed (and stale proposals), so credits never stay held.
+  const stopSweeper =
+    env.sessionSweepMinutes > 0
+      ? startSessionSweeper({ minutes: env.sessionSweepMinutes })
+      : () => {};
+
   const shutdown = async (signal) => {
     console.log(`${signal} received, shutting down`);
+    stopSweeper();
     server.close();
     await disconnectDB();
     process.exit(0);

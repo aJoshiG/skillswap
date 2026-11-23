@@ -7,6 +7,7 @@ const credits = require('./credit.service');
 const reviews = require('./review.service');
 const { runInTransaction } = require('../utils/transaction');
 const { pageMeta } = require('../utils/pagination');
+const { AUTO_COMPLETE_AFTER_HOURS, AUTO_EXPIRE_AFTER_DAYS } = require('../config/constants');
 
 const USER_PREVIEW = 'name avatarUrl';
 const MAX_DAYS_AHEAD = 180;
@@ -76,7 +77,7 @@ async function list(userId, { scope, page, limit }) {
     $or: [{ teacher: userId }, { learner: userId }],
     status: active
       ? { $in: ['proposed', 'scheduled'] }
-      : { $in: ['completed', 'declined', 'cancelled'] },
+      : { $in: ['completed', 'declined', 'cancelled', 'expired'] },
   };
   const [items, total] = await Promise.all([
     populate(
@@ -223,4 +224,96 @@ function respond(userId, id, action) {
   return ACTIONS[action](userId, id);
 }
 
-module.exports = { propose, list, respond };
+// ---------------------------------------------------------------------------------------------
+// Session sweeper: resolves sessions people forgot about, so credits never stay held forever.
+// Every change is a conditional update ("only if it is still in the state we found"), inside a
+// transaction with its credit movement, so running it twice, concurrently, or while someone
+// clicks Confirm can never pay or refund twice.
+// ---------------------------------------------------------------------------------------------
+
+const HOUR_MS = 3600 * 1000;
+/** When a session ends: scheduledAt + duration (as an aggregation expression). */
+const endsAt = { $add: ['$scheduledAt', { $multiply: ['$durationMinutes', 60 * 1000] }] };
+
+/** Tells both participants that the system resolved their session. */
+async function notifyBoth(sessionId, action) {
+  const session = await populate(Session.findById(sessionId));
+  for (const user of [session.teacher, session.learner]) {
+    emitter.toUser(user._id ?? user, 'session:updated', { session, action, by: 'SkillSwap' });
+  }
+}
+
+/** One confirmation and the grace period has passed: complete it and pay the teacher. */
+async function autoComplete(id, now) {
+  let done = null;
+  await runInTransaction(async (tx) => {
+    done = await Session.findOneAndUpdate(
+      { _id: id, status: 'scheduled', 'confirmedBy.0': { $exists: true } },
+      { $set: { status: 'completed', completedAt: now, autoResolved: true } },
+      { session: tx, returnDocument: 'after' },
+    );
+    if (done) await credits.move(done.teacher, done.credits, 'session-earned', done._id, tx);
+  });
+  return Boolean(done);
+}
+
+/** Nobody confirmed and the grace period has passed: expire it and refund the learner. */
+async function autoExpire(id) {
+  let done = null;
+  await runInTransaction(async (tx) => {
+    done = await Session.findOneAndUpdate(
+      { _id: id, status: 'scheduled', confirmedBy: { $size: 0 } },
+      { $set: { status: 'expired', autoResolved: true } },
+      { session: tx, returnDocument: 'after' },
+    );
+    if (done) await credits.move(done.learner, done.credits, 'session-refund', done._id, tx);
+  });
+  return Boolean(done);
+}
+
+/**
+ * Resolves overdue sessions as of `now` (a parameter so tests can move time forward):
+ * - scheduled, one confirmation, ended AUTO_COMPLETE_AFTER_HOURS ago → completed, teacher paid
+ * - scheduled, no confirmations, ended AUTO_EXPIRE_AFTER_DAYS ago → expired, learner refunded
+ * - proposed, start time passed → expired (nothing was held)
+ */
+async function resolveOverdue(now = new Date()) {
+  const completeBefore = new Date(now.getTime() - AUTO_COMPLETE_AFTER_HOURS * HOUR_MS);
+  const expireBefore = new Date(now.getTime() - AUTO_EXPIRE_AFTER_DAYS * 24 * HOUR_MS);
+  const result = { completed: 0, expired: 0, proposalsExpired: 0 };
+
+  const toComplete = await Session.find(
+    {
+      status: 'scheduled',
+      'confirmedBy.0': { $exists: true },
+      $expr: { $lte: [endsAt, completeBefore] },
+    },
+    { _id: 1 },
+  ).lean();
+  for (const { _id } of toComplete) {
+    if (await autoComplete(_id, now)) {
+      result.completed += 1;
+      await notifyBoth(_id, 'auto-completed');
+    }
+  }
+
+  const toExpire = await Session.find(
+    { status: 'scheduled', confirmedBy: { $size: 0 }, $expr: { $lte: [endsAt, expireBefore] } },
+    { _id: 1 },
+  ).lean();
+  for (const { _id } of toExpire) {
+    if (await autoExpire(_id)) {
+      result.expired += 1;
+      await notifyBoth(_id, 'expired');
+    }
+  }
+
+  const stale = await Session.updateMany(
+    { status: 'proposed', scheduledAt: { $lte: now } },
+    { $set: { status: 'expired', autoResolved: true } },
+  );
+  result.proposalsExpired = stale.modifiedCount;
+  return result;
+}
+
+module.exports = { propose, list, respond, resolveOverdue };
