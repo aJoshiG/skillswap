@@ -3,7 +3,7 @@
 Goal: a working, deployed MEAN-stack app (MongoDB, Express, Angular, Node) good enough to
 put on a resume and GitHub. Tick items off here as they're finished.
 
-**Next step:** Phase 1, the first unchecked item.
+**Next step:** Phase 2, create the GitHub repo and push.
 
 ---
 
@@ -15,13 +15,22 @@ put on a resume and GitHub. Tick items off here as they're finished.
 - [x] Docker Compose, GitHub Actions CI, README
 - [x] Fixed missing client dependencies and the server tests failing under Jest
 
-## Phase 1: Run it and check every flow (not done yet: the app has never been run end to end)
-- [ ] Seed the demo data into the local MongoDB (`cd server && npm run seed`, or `node scripts/seed.js`)
-- [ ] Run the API (`npm run dev`, port 4000) and the client (`npm start`, port 4200)
-- [ ] Check each flow by hand: register, log in, "Try the demo account", edit profile, explore and filters,
-      send / accept / decline / cancel a request, chat in two browsers (typing, read receipts, online status)
-- [ ] Fix whatever turns up, add a test for each fix
-- [ ] Note: Docker isn't installed on this machine, so run natively; a MongoDB 8.0 Windows service is on :27017
+## ✅ Phase 1: Run it and check every flow (done, 2026-11-23)
+- [x] Seed the demo data into the local MongoDB (`cd server && npm run seed`)
+- [x] Run the API (`npm run dev`, port 4000) and the client (`npm start`, port 4200)
+- [x] Check every flow: 54 scripted API + socket checks through the dev proxy, plus a two-browser
+      walkthrough in Edge (demo login, explore, request, accept, live chat, read receipts, online status,
+      reload keeps you logged in, logout, mobile width)
+- [x] Fixed what turned up:
+  - Each accepted request opened a new thread, so the same two people got duplicate chats.
+    Now there's one conversation per pair (unique `pairKey`), with a regression test.
+  - Login, register and refresh shared one limit of 30 per 15 min, and refresh runs on every page
+    load, so normal use could lock people out. Login/register now count only failed attempts, and
+    refresh has its own limit.
+  - Explore filter labels were cut off on desktop; rebalanced the layout and shortened labels.
+  - Added `.gitattributes` (LF endings) so Prettier doesn't fail on Windows checkouts.
+- Note: Docker isn't installed on this machine, so run natively; a MongoDB 8.0 Windows service is on :27017.
+  Run client tests with `CHROME_BIN` pointing at Edge.
 
 ## Phase 2: Put it on GitHub and deploy it (the most important part for a resume)
 - [ ] Create a GitHub repo, push, get CI green, add the CI badge to the README

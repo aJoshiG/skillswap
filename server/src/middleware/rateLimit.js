@@ -6,9 +6,22 @@ const limitedResponse = {
   error: { code: 'RATE_LIMITED', message: 'Too many requests, please try again later' },
 };
 
+// Login/register: brute-force protection, so only failed attempts count. Successful logins
+// never lock a real user out.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: env.isTest ? 10_000 : 30,
+  limit: env.isTest ? 10_000 : 20,
+  skipSuccessfulRequests: true,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: limitedResponse,
+});
+
+// Refresh runs on every page load (silent session restore), and the token is unguessable,
+// so it gets its own, more generous budget instead of sharing the login one.
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: env.isTest ? 10_000 : 300,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   message: limitedResponse,
@@ -22,4 +35,4 @@ const apiLimiter = rateLimit({
   message: limitedResponse,
 });
 
-module.exports = { authLimiter, apiLimiter };
+module.exports = { authLimiter, refreshLimiter, apiLimiter };

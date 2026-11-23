@@ -35,17 +35,17 @@ import { SkillChip } from '../../shared/components/skill-chip';
         class="card mb-6 grid gap-3 p-4 md:grid-cols-12"
         (submit)="$event.preventDefault()"
       >
-        <div class="md:col-span-12 lg:col-span-4">
+        <div class="md:col-span-12 xl:col-span-3">
           <label for="q" class="sr-only">Search</label>
           <input
             id="q"
             class="input"
             formControlName="q"
-            placeholder="Search skills, names or bios… e.g. guitar"
+            placeholder="Search skills, e.g. guitar"
           />
         </div>
         <div
-          class="inline-flex rounded-lg bg-slate-100 p-1 md:col-span-4 lg:col-span-3"
+          class="inline-flex rounded-lg bg-slate-100 p-1 md:col-span-6 xl:col-span-3"
           role="radiogroup"
           aria-label="Search by"
         >
@@ -67,7 +67,7 @@ import { SkillChip } from '../../shared/components/skill-chip';
           }
         </div>
         <select
-          class="input md:col-span-2 lg:col-span-2"
+          class="input md:col-span-6 xl:col-span-2"
           formControlName="category"
           aria-label="Category"
         >
@@ -77,7 +77,7 @@ import { SkillChip } from '../../shared/components/skill-chip';
           }
         </select>
         <select
-          class="input md:col-span-2 lg:col-span-1"
+          class="input md:col-span-6 xl:col-span-2"
           formControlName="level"
           aria-label="Level"
         >
@@ -87,17 +87,17 @@ import { SkillChip } from '../../shared/components/skill-chip';
           }
         </select>
         <select
-          class="input md:col-span-2 lg:col-span-2"
+          class="input md:col-span-6 xl:col-span-2"
           formControlName="availability"
           aria-label="Availability"
         >
-          <option value="">Online or in person</option>
+          <option value="">Any format</option>
           <option value="online">Online</option>
           <option value="in-person">In person</option>
         </select>
         @if (filters.value.availability === 'in-person') {
           <input
-            class="input md:col-span-4"
+            class="input md:col-span-6 xl:col-span-3"
             formControlName="city"
             placeholder="City, e.g. Pune"
             aria-label="City"

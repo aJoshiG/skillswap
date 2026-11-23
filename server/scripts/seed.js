@@ -208,7 +208,11 @@ async function seed() {
     Conversation.deleteMany({}),
     Message.deleteMany({}),
   ]);
-  await Promise.all([User.init(), SwapRequest.init(), Conversation.init(), Message.init()]);
+  // syncIndexes (not just init) also drops indexes the schemas no longer define,
+  // e.g. the old unique index on Conversation.request.
+  for (const model of [User, RefreshToken, SwapRequest, Conversation, Message]) {
+    await model.syncIndexes();
+  }
 
   const now = Date.now();
   const created = [];

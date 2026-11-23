@@ -116,10 +116,15 @@ async function respond(userId, requestId, action) {
 
   let conversation = null;
   if (status === 'accepted') {
+    // Reuse the pair's existing thread (or create it), pointing it at this latest swap.
+    // The unique pairKey makes concurrent accepts between the same pair converge on one document.
     conversation = await Conversation.findOneAndUpdate(
-      { request: updated._id },
-      { $setOnInsert: { participants: [updated.from, updated.to], request: updated._id } },
-      { upsert: true, returnDocument: 'after' },
+      { pairKey: Conversation.pairKeyFor(updated.from, updated.to) },
+      {
+        $setOnInsert: { participants: [updated.from, updated.to] },
+        $set: { request: updated._id },
+      },
+      { upsert: true, returnDocument: 'after', runValidators: true },
     );
   }
 

@@ -70,6 +70,25 @@ describe('Swap requests', () => {
     await send(learner, { to: teacher.user._id, skillId }).expect(201);
   });
 
+  it('reuses one conversation per pair, whichever direction later swaps go', async () => {
+    const { teacher, learner, skillId } = await setup();
+    const accept = async (from, to, skill) => {
+      const { body } = await send(from, { to: to.user._id, skillId: skill }).expect(201);
+      const res = await api().patch(`/api/requests/${body.data._id}/accept`).set(auth(to.token)).expect(200);
+      return res.body.data;
+    };
+
+    const first = await accept(learner, teacher, skillId);
+    // A second swap, in the opposite direction, between the same two people.
+    const second = await accept(teacher, learner, learner.user.skillsOffered[0]._id);
+    expect(second.conversationId).toBe(first.conversationId);
+
+    const list = await api().get('/api/conversations').set(auth(learner.token)).expect(200);
+    expect(list.body.data).toHaveLength(1);
+    // The thread points at the latest swap, so the chat header shows the current skills.
+    expect(list.body.data[0].request.skill.name).toBe('Python');
+  });
+
   it('only the sender can cancel, and declined requests do not open chats', async () => {
     const { teacher, learner, skillId } = await setup();
     const first = await send(learner, { to: teacher.user._id, skillId });
