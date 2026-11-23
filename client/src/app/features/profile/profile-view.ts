@@ -92,7 +92,7 @@ const sameSkill = (a: Pick<Skill, 'name'>, b: Pick<Skill, 'name'>) =>
             @if (u.languages.length) {
               <p class="mt-4 text-sm text-slate-500">🗣️ Speaks {{ u.languages.join(', ') }}</p>
             }
-            <p class="mt-2 text-xs text-slate-400">
+            <p class="mt-2 text-xs text-slate-500">
               Member since {{ u.createdAt | date: 'MMMM y' }}
             </p>
           </div>
@@ -107,7 +107,7 @@ const sameSkill = (a: Pick<Skill, 'name'>, b: Pick<Skill, 'name'>) =>
                   <div class="flex flex-wrap items-center gap-2">
                     <app-skill-chip [skill]="skill" />
                     @if (!isMe() && iWant(skill)) {
-                      <span class="text-xs font-medium text-emerald-600">★ You want this</span>
+                      <span class="text-xs font-medium text-emerald-700">★ You want this</span>
                     }
                   </div>
                   @if (!isMe()) {
@@ -129,7 +129,7 @@ const sameSkill = (a: Pick<Skill, 'name'>, b: Pick<Skill, 'name'>) =>
                 <li class="flex items-center gap-2">
                   <app-skill-chip [skill]="skill" variant="want" />
                   @if (!isMe() && iTeach(skill)) {
-                    <span class="text-xs font-medium text-emerald-600">★ You teach this</span>
+                    <span class="text-xs font-medium text-emerald-700">★ You teach this</span>
                   }
                 </li>
               } @empty {
@@ -161,7 +161,7 @@ const sameSkill = (a: Pick<Skill, 'name'>, b: Pick<Skill, 'name'>) =>
                         >{{ r.reviewer.name }}</a
                       >
                       <app-stars [value]="r.rating" [showValue]="false" />
-                      <span class="text-xs text-slate-400">{{ r.createdAt | timeAgo }}</span>
+                      <span class="text-xs text-slate-500">{{ r.createdAt | timeAgo }}</span>
                     </div>
                     <p class="text-xs text-slate-500">
                       {{ r.role === 'teacher' ? 'Learned' : 'Taught' }} {{ r.skill.name }}

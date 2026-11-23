@@ -26,7 +26,7 @@ import { Spinner } from '../../shared/components/spinner';
         <div>
           <label class="label" for="offered"
             >What can you teach in return?
-            <span class="font-normal text-slate-400">(optional)</span></label
+            <span class="font-normal text-slate-500">(optional)</span></label
           >
           @if (myOffered().length) {
             <select id="offered" class="input" formControlName="offeredSkillId">
@@ -54,7 +54,7 @@ import { Spinner } from '../../shared/components/spinner';
             maxlength="500"
             placeholder="Introduce yourself and say what you'd like to learn…"
           ></textarea>
-          <p class="mt-1 text-right text-xs text-slate-400">
+          <p class="mt-1 text-right text-xs text-slate-500">
             {{ form.value.message?.length ?? 0 }}/500
           </p>
         </div>

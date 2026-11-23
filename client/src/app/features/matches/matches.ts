@@ -115,7 +115,7 @@ type Kind = 'mutual' | 'teach-you' | 'learn-from-you';
                   @if (m.match.theyTeach.length) {
                     <div>
                       <dt
-                        class="mb-1 text-[11px] font-semibold tracking-wider text-slate-400 uppercase"
+                        class="mb-1 text-[11px] font-semibold tracking-wider text-slate-500 uppercase"
                       >
                         Can teach you
                       </dt>
@@ -129,7 +129,7 @@ type Kind = 'mutual' | 'teach-you' | 'learn-from-you';
                   @if (m.match.theyWant.length) {
                     <div>
                       <dt
-                        class="mb-1 text-[11px] font-semibold tracking-wider text-slate-400 uppercase"
+                        class="mb-1 text-[11px] font-semibold tracking-wider text-slate-500 uppercase"
                       >
                         Wants to learn from you
                       </dt>

@@ -23,7 +23,7 @@ import { Spinner } from '../../shared/components/spinner';
         <div>
           <label for="comment" class="label">
             Comment
-            <span class="font-normal text-slate-400">(optional, shown on their profile)</span>
+            <span class="font-normal text-slate-500">(optional, shown on their profile)</span>
           </label>
           <textarea
             id="comment"
@@ -37,7 +37,7 @@ import { Spinner } from '../../shared/components/spinner';
                 : 'e.g. Patient, clear and fun'
             "
           ></textarea>
-          <p class="mt-1 text-right text-xs text-slate-400">
+          <p class="mt-1 text-right text-xs text-slate-500">
             {{ form.value.comment?.length ?? 0 }}/500
           </p>
         </div>

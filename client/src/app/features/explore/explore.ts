@@ -60,7 +60,7 @@ import { Stars } from '../../shared/components/stars';
               [class]="
                 filters.value.type === opt.value
                   ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                  : 'text-slate-600 hover:text-slate-800'
               "
               (click)="filters.controls.type.setValue(opt.value)"
             >
@@ -163,7 +163,7 @@ import { Stars } from '../../shared/components/stars';
                 <p class="mt-3 line-clamp-2 text-sm text-slate-600">{{ user.bio }}</p>
               }
               <div class="mt-auto pt-4">
-                <p class="mb-1.5 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+                <p class="mb-1.5 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
                   {{ filters.value.type === 'wanted' ? 'Wants to learn' : 'Teaches' }}
                 </p>
                 <div class="flex flex-wrap gap-1.5">

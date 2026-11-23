@@ -58,7 +58,7 @@ const DEMO: LoginDto = { email: 'demo@skillswap.dev', password: 'password123' };
           </button>
         </form>
 
-        <div class="my-6 flex items-center gap-3 text-xs text-slate-400">
+        <div class="my-6 flex items-center gap-3 text-xs text-slate-500">
           <span class="h-px flex-1 bg-slate-200"></span>or<span
             class="h-px flex-1 bg-slate-200"
           ></span>

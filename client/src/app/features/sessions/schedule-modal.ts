@@ -90,7 +90,7 @@ function toLocalInput(d: Date): string {
                 [class]="
                   form.value.mode === m.value
                     ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-500'
+                    : 'text-slate-600'
                 "
                 [attr.aria-pressed]="form.value.mode === m.value"
                 (click)="form.controls.mode.setValue(m.value)"
@@ -103,7 +103,7 @@ function toLocalInput(d: Date): string {
 
         <div>
           <label for="note" class="label"
-            >Note <span class="font-normal text-slate-400">(optional)</span></label
+            >Note <span class="font-normal text-slate-500">(optional)</span></label
           >
           <input
             id="note"

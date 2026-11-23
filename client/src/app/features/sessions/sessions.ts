@@ -40,7 +40,7 @@ import { ReviewModal } from './review-modal';
                 role="tab"
                 class="rounded-md px-4 py-1.5 text-sm font-medium transition"
                 [class]="
-                  scope() === tab.value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                  scope() === tab.value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
                 "
                 [attr.aria-selected]="scope() === tab.value"
                 (click)="scope.set(tab.value)"
@@ -236,11 +236,11 @@ import { ReviewModal } from './review-modal';
                   <li class="flex items-start justify-between gap-3 text-sm">
                     <div class="min-w-0">
                       <p class="truncate text-slate-700">{{ ledgerText(t) }}</p>
-                      <p class="text-xs text-slate-400">{{ t.createdAt | timeAgo }}</p>
+                      <p class="text-xs text-slate-500">{{ t.createdAt | timeAgo }}</p>
                     </div>
                     <span
                       class="shrink-0 font-semibold"
-                      [class]="t.amount >= 0 ? 'text-emerald-600' : 'text-slate-500'"
+                      [class]="t.amount >= 0 ? 'text-emerald-700' : 'text-slate-500'"
                     >
                       {{ t.amount > 0 ? '+' : '' }}{{ t.amount }}
                     </span>
@@ -385,7 +385,7 @@ export class Sessions {
   }
 
   protected creditStyle(s: Session): string {
-    if (s.status === 'completed' && !this.iAmLearner(s)) return 'font-medium text-emerald-600';
+    if (s.status === 'completed' && !this.iAmLearner(s)) return 'font-medium text-emerald-700';
     if (s.status === 'declined' || s.status === 'cancelled') return 'line-through';
     return '';
   }

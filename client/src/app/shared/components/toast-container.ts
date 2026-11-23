@@ -24,7 +24,7 @@ import { ToastService } from '../../core/services/toast.service';
           }}</span>
           <p class="flex-1 text-slate-700">{{ toast.message }}</p>
           <button
-            class="text-slate-400 hover:text-slate-600"
+            class="text-slate-500 hover:text-slate-600"
             (click)="toasts.dismiss(toast.id)"
             aria-label="Dismiss"
           >

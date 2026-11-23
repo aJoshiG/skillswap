@@ -59,7 +59,7 @@ import { Avatar } from './avatar';
               <span class="hidden text-sm font-medium sm:inline">{{
                 user.name.split(' ')[0]
               }}</span>
-              <span class="text-xs text-slate-400">▾</span>
+              <span class="text-xs text-slate-500">▾</span>
             </button>
             @if (menuOpen()) {
               <div class="fixed inset-0 z-40" (click)="menuOpen.set(false)"></div>

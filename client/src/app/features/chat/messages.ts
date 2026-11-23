@@ -51,7 +51,7 @@ import { ChatThread } from './chat-thread';
                       <p class="truncate text-sm font-semibold">
                         {{ c.otherUser?.name ?? 'Deleted user' }}
                       </p>
-                      <span class="shrink-0 text-[11px] text-slate-400">{{
+                      <span class="shrink-0 text-[11px] text-slate-500">{{
                         c.lastMessage.createdAt ?? c.updatedAt | timeAgo
                       }}</span>
                     </div>

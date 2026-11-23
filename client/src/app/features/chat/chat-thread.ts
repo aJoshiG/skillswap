@@ -62,7 +62,7 @@ const TYPING_IDLE_MS = 2000;
               @if (otherTyping()) {
                 <span class="text-brand-600">typing…</span>
               } @else if (otherOnline()) {
-                <span class="text-emerald-600">Online</span>
+                <span class="text-emerald-700">Online</span>
               } @else {
                 Active {{ c.otherUser?.lastActiveAt | timeAgo }}
               }
@@ -118,7 +118,7 @@ const TYPING_IDLE_MS = 2000;
         @for (m of messages(); track m._id; let i = $index) {
           @let mine = m.sender === me();
           @if (showDay(i)) {
-            <p class="py-3 text-center text-[11px] font-medium text-slate-400">
+            <p class="py-3 text-center text-[11px] font-medium text-slate-500">
               {{ m.createdAt | date: 'EEEE, d MMM' }}
             </p>
           }
@@ -135,7 +135,7 @@ const TYPING_IDLE_MS = 2000;
               {{ m.text }}
               <span
                 class="mt-0.5 block text-right text-[10px]"
-                [class]="mine ? 'text-brand-100' : 'text-slate-400'"
+                [class]="mine ? 'text-brand-100' : 'text-slate-500'"
               >
                 {{ m.createdAt | date: 'shortTime' }}
                 @if (mine) {
@@ -157,7 +157,7 @@ const TYPING_IDLE_MS = 2000;
           }
         }
         @if (lastSeenLabel()) {
-          <p class="pt-1 text-right text-[11px] text-slate-400">{{ lastSeenLabel() }}</p>
+          <p class="pt-1 text-right text-[11px] text-slate-500">{{ lastSeenLabel() }}</p>
         }
       </div>
 

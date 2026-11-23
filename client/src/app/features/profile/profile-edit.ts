@@ -105,7 +105,7 @@ type SkillForm = FormGroup<{
             </div>
             <div>
               <label class="label" for="languages"
-                >Languages <span class="font-normal text-slate-400">(comma separated)</span></label
+                >Languages <span class="font-normal text-slate-500">(comma separated)</span></label
               >
               <input
                 id="languages"
@@ -170,7 +170,7 @@ type SkillForm = FormGroup<{
                   </button>
                 </div>
               } @empty {
-                <p class="text-sm text-slate-400">No skills yet. Click “Add” to list one.</p>
+                <p class="text-sm text-slate-500">No skills yet. Click “Add” to list one.</p>
               }
             </div>
           </section>

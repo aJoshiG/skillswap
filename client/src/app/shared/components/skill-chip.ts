@@ -19,7 +19,7 @@ const LEVEL_DOTS = { beginner: 1, intermediate: 2, expert: 3 } as const;
     >
       {{ skill().name }}
       @if (showLevel()) {
-        <span class="flex gap-0.5" [attr.aria-label]="skill().level | titlecase">
+        <span class="flex gap-0.5" role="img" [attr.aria-label]="skill().level | titlecase">
           @for (dot of [1, 2, 3]; track dot) {
             <span
               class="size-1.5 rounded-full"

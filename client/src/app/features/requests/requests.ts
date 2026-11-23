@@ -40,7 +40,7 @@ const STATUS_STYLES: Record<RequestStatus, string> = {
               [class]="
                 box() === tab.value
                   ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                  : 'text-slate-600 hover:text-slate-800'
               "
               (click)="box.set(tab.value)"
             >
@@ -101,7 +101,7 @@ const STATUS_STYLES: Record<RequestStatus, string> = {
                       [class]="statusStyle(req.status)"
                       >{{ req.status | titlecase }}</span
                     >
-                    <span class="text-xs text-slate-400">{{ req.createdAt | timeAgo }}</span>
+                    <span class="text-xs text-slate-500">{{ req.createdAt | timeAgo }}</span>
                   </div>
                   <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-600">
                     <span>{{ box() === 'received' ? 'Wants to learn' : 'You want to learn' }}</span>
