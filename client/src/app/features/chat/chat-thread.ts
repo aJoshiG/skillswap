@@ -226,6 +226,8 @@ export class ChatThread {
   private otherTypingTimer: ReturnType<typeof setTimeout> | undefined;
   private isTyping = false;
   private joinedId: string | null = null;
+  /** True once the server has confirmed we joined the room (events sent earlier are dropped). */
+  private inRoom = false;
 
   constructor() {
     effect(() => {
@@ -239,8 +241,10 @@ export class ChatThread {
       const id = this.conversationId();
       untracked(() => {
         // Rooms are lost when the socket drops, so forget the old join.
-        if (!connected) this.joinedId = null;
-        else this.joinRoom(id);
+        if (!connected) {
+          this.joinedId = null;
+          this.inRoom = false;
+        } else this.joinRoom(id);
       });
     });
 
@@ -282,6 +286,7 @@ export class ChatThread {
     if (this.joinedId && this.joinedId !== id) {
       this.chat.leave(this.joinedId);
       this.joinedId = null;
+      this.inRoom = false;
     }
     this.chat.activeId.set(id);
     this.loading.set(true);
@@ -320,7 +325,15 @@ export class ChatThread {
   private joinRoom(id: string) {
     if (this.joinedId === id) return;
     this.joinedId = id;
-    this.chat.join(id).catch(() => (this.joinedId = null));
+    this.chat
+      .join(id)
+      .then(() => {
+        if (this.joinedId !== id) return;
+        this.inRoom = true;
+        // Started typing before the join finished? Tell the other person now.
+        if (this.isTyping) this.chat.typing(id, true);
+      })
+      .catch(() => (this.joinedId = null));
   }
 
   protected loadOlder() {
@@ -387,7 +400,8 @@ export class ChatThread {
   protected onTyping() {
     if (!this.isTyping) {
       this.isTyping = true;
-      this.chat.typing(this.conversationId(), true);
+      // Before the room join completes the server would drop this; joinRoom() sends it then.
+      if (this.inRoom) this.chat.typing(this.conversationId(), true);
     }
     clearTimeout(this.typingTimer);
     this.typingTimer = setTimeout(() => this.stopTyping(), TYPING_IDLE_MS);
