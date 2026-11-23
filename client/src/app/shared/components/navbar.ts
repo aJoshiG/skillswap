@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ChatService } from '../../core/services/chat.service';
 import { RequestService } from '../../core/services/request.service';
+import { SessionService } from '../../core/services/session.service';
 import { Avatar } from './avatar';
 
 @Component({
@@ -37,7 +38,17 @@ import { Avatar } from './avatar';
             }
           </div>
 
-          <div class="relative ml-auto">
+          <div class="relative ml-auto flex items-center gap-2">
+            @if (sessions.balance() !== null) {
+              <a
+                routerLink="/sessions"
+                class="hidden items-center gap-1 rounded-full bg-brand-50 px-3 py-1 text-sm font-semibold text-brand-700 hover:bg-brand-100 sm:flex"
+                [attr.aria-label]="'Your time credits: ' + sessions.balance()"
+                title="Your time credits"
+              >
+                ⏱ {{ sessions.balance() }}
+              </a>
+            }
             <button
               class="flex items-center gap-2 rounded-full p-1 pr-3 hover:bg-slate-100"
               (click)="menuOpen.set(!menuOpen())"
@@ -60,6 +71,13 @@ import { Avatar } from './avatar';
                 <div class="border-b border-slate-100 px-4 py-2">
                   <p class="truncate text-sm font-semibold">{{ user.name }}</p>
                   <p class="truncate text-xs text-slate-500">{{ user.email }}</p>
+                  @if (sessions.balance() !== null) {
+                    <a
+                      routerLink="/sessions"
+                      class="mt-1 inline-block text-xs font-semibold text-brand-700 sm:hidden"
+                      >⏱ {{ sessions.balance() }} credits</a
+                    >
+                  }
                 </div>
                 <div class="md:hidden">
                   @for (link of links; track link.path) {
@@ -114,6 +132,7 @@ export class Navbar {
   protected readonly auth = inject(AuthService);
   private readonly chat = inject(ChatService);
   private readonly requests = inject(RequestService);
+  protected readonly sessions = inject(SessionService);
 
   protected readonly menuOpen = signal(false);
   protected readonly links = [
@@ -121,11 +140,13 @@ export class Navbar {
     { path: '/explore', label: 'Explore' },
     { path: '/requests', label: 'Requests' },
     { path: '/messages', label: 'Messages' },
+    { path: '/sessions', label: 'Sessions' },
   ];
 
   protected badge(path: string): number {
     if (path === '/requests') return this.requests.pendingReceived();
     if (path === '/messages') return this.chat.totalUnread();
+    if (path === '/sessions') return this.sessions.needsAction();
     return 0;
   }
 }

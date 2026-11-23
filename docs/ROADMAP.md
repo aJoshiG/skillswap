@@ -3,7 +3,7 @@
 Goal: a working, deployed MEAN-stack app (MongoDB, Express, Angular, Node) good enough to
 put on a resume and GitHub. Tick items off here as they're finished.
 
-**Next step:** Phase 3, sessions and time credits (schedule a session from an accepted swap; both confirm; credits move inside a MongoDB transaction).
+**Next step:** Phase 3 extras (reviews and reputation after completed sessions, notifications), or Phase 4 polish (README screenshots/GIF, Playwright e2e in CI).
 
 ---
 
@@ -52,8 +52,14 @@ put on a resume and GitHub. Tick items off here as they're finished.
       real matches), overlap in both directions, score (two-way swap, overlap, teacher level, same city
       in person / both online), $facet pagination, $lookup of open swaps. 5 tests. Also fixed: older
       accepted requests between the same pair lost their "Open chat" link (conversation lookup by pair).
-- [ ] **Sessions and time credits.** Schedule a session from an accepted swap, both people confirm it
-      happened, and credits move (teach 1 hour = earn 1 credit) inside a **MongoDB transaction**.
+- [x] **Sessions and time credits** (2026-11-23). Propose / accept / decline / cancel / confirm, with escrow:
+      credits held on accept, refunded on cancel before the start, paid to the teacher when both confirm.
+      Every credit move runs in a MongoDB transaction with a conditional update and an append-only ledger
+      (the ledger always adds up to the balance). 10 tests, including simultaneous accepts and confirms
+      (a probe showed MongoDB retrying on real write conflicts). UI: Sessions page, schedule dialog in chat
+      and on Requests, navbar balance and action badge, live socket updates. `npm run db` gives local dev a
+      replica set on :27018 without touching the Windows MongoDB service.
+      Follow-ups: auto-resolve sessions nobody confirms (e.g. refund after 7 days), reviews after completion.
 - [ ] **Reviews and reputation.** Rate someone after a completed session, show the average on their profile.
 - [ ] **Avatar upload** to Cloudinary instead of pasting an image URL.
 - [ ] **Notifications.** A bell icon with live notifications over the existing socket.

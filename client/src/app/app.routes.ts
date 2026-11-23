@@ -51,6 +51,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/requests/requests').then((m) => m.Requests),
       },
       {
+        path: 'sessions',
+        title: 'Sessions · SkillSwap',
+        loadComponent: () => import('./features/sessions/sessions').then((m) => m.Sessions),
+      },
+      {
         path: 'messages',
         title: 'Messages · SkillSwap',
         loadComponent: () => import('./features/chat/messages').then((m) => m.Messages),

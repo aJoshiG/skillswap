@@ -14,6 +14,7 @@ import { Avatar } from '../../shared/components/avatar';
 import { EmptyState } from '../../shared/components/empty-state';
 import { SkillChip } from '../../shared/components/skill-chip';
 import { TimeAgoPipe } from '../../shared/pipes/time-ago.pipe';
+import { ScheduleModal, SwapForScheduling } from '../sessions/schedule-modal';
 
 const STATUS_STYLES: Record<RequestStatus, string> = {
   pending: 'bg-amber-50 text-amber-700 ring-amber-200',
@@ -24,7 +25,7 @@ const STATUS_STYLES: Record<RequestStatus, string> = {
 
 @Component({
   selector: 'app-requests',
-  imports: [RouterLink, TitleCasePipe, Avatar, SkillChip, EmptyState, TimeAgoPipe],
+  imports: [RouterLink, TitleCasePipe, Avatar, SkillChip, EmptyState, TimeAgoPipe, ScheduleModal],
   template: `
     <div class="page max-w-4xl">
       <h1 class="text-3xl font-bold">Swap requests</h1>
@@ -144,6 +145,11 @@ const STATUS_STYLES: Record<RequestStatus, string> = {
                       Cancel request
                     </button>
                   }
+                  @if (req.status === 'accepted') {
+                    <button class="btn-secondary btn-sm" (click)="scheduling.set(req)">
+                      📅 Schedule
+                    </button>
+                  }
                   @if (req.status === 'accepted' && req.conversationId) {
                     <a [routerLink]="['/messages', req.conversationId]" class="btn-primary btn-sm"
                       >💬 Open chat</a
@@ -175,12 +181,35 @@ const STATUS_STYLES: Record<RequestStatus, string> = {
         }
       </div>
     </div>
+
+    @if (scheduling(); as req) {
+      <app-schedule-modal
+        [swap]="swapFor(req)"
+        (closed)="scheduling.set(null)"
+        (proposed)="scheduling.set(null)"
+      />
+    }
   `,
 })
 export class Requests {
   protected readonly requests = inject(RequestService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+
+  /** The accepted swap being scheduled, while the schedule dialog is open. */
+  protected readonly scheduling = signal<SwapRequest | null>(null);
+
+  protected swapFor(req: SwapRequest): SwapForScheduling {
+    const other = this.box() === 'received' ? req.from : req.to;
+    return {
+      requestId: req._id,
+      fromId: req.from._id,
+      toId: req.to._id,
+      skill: req.skill,
+      offeredSkill: req.offeredSkill,
+      otherName: other.name,
+    };
+  }
 
   protected readonly tabs: { value: RequestBox; label: string }[] = [
     { value: 'received', label: 'Received' },

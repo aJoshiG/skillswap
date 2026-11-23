@@ -30,10 +30,9 @@ find each other, send swap requests, and chat in real time once a request is acc
 | **Explore** | Full-text search (MongoDB text index) with filters for teach/want, category, level, online/in-person and city, plus pagination and loading skeletons. |
 | **Swap requests** | Request a specific skill and optionally offer one of yours in return. Self-requests and duplicate pending requests are blocked (checked in code and by a partial unique index). Received and sent inboxes with accept, decline and cancel. |
 | **Real-time chat** | Accepting a request opens a private room. Socket connections are JWT-authenticated and only participants can join. Messages persist in MongoDB with cursor pagination. Includes typing indicators, read receipts (✓ / ✓✓), online presence, unread badges and live toasts. |
+| **Sessions & time credits** | Schedule lessons from an accepted swap (in chat or on the Requests page): who teaches what, when, how long, online or in person. 1 hour of teaching = 1 credit, and new users start with 2. Accepting a session **holds** the learner's credits (escrow). Cancelling before it starts **refunds** them. Once both people confirm it happened, the teacher is **paid**. Every step runs in a **MongoDB transaction** and is written to an append-only ledger. Live updates over the socket, plus a navbar balance and an action badge. |
 
 ### Roadmap
-- **Sessions:** schedule swap sessions and have both people confirm completion
-- **Time credits:** teach 1 hour to earn 1 credit and spend credits to learn, with transfers done in MongoDB transactions
 - **Reviews and reputation**, plus **real-time notifications**
 
 ---
@@ -83,12 +82,17 @@ erDiagram
   SWAP_REQUEST ||--o| CONVERSATION : "opens when accepted"
   CONVERSATION ||--o{ MESSAGE : contains
   USER ||--o{ REFRESH_TOKEN : owns
+  SWAP_REQUEST ||--o{ SESSION : "schedules"
+  USER ||--o{ SESSION : "teaches / learns"
+  USER ||--o{ CREDIT_TRANSACTION : "ledger"
+  SESSION ||--o{ CREDIT_TRANSACTION : "hold / refund / pay"
   USER {
     string name
     string email
     string availability
     Skill[] skillsOffered
     Skill[] skillsWanted
+    number credits
   }
   SWAP_REQUEST {
     ObjectId from
@@ -120,6 +124,7 @@ erDiagram
 - **Race-safe state changes.** Accept, decline and cancel use a conditional `findOneAndUpdate({ status: 'pending' })`, so two clicks can't both succeed. Duplicate pending requests are blocked by a **partial unique index**, not just an application-level check.
 - **Optimistic chat.** Sent messages appear immediately and are replaced by the saved copy when the server acknowledges them, de-duplicated against the broadcast echo.
 - **Matching in one aggregation pipeline.** `$match` (candidates) → `$addFields` (overlapping skills in each direction, meeting formats, score) → `$sort` → `$facet` (page + total in one round trip) → `$lookup` (open swaps, only for the page shown). The candidate filter uses case-insensitive **collation-aware indexes** on skill names, so it examines only real matches instead of scanning every user (checked with `explain()`).
+- **Credits are money-like, so every move is a transaction.** Holding, refunding and paying each update the balance (`User.credits`), the ledger (`CreditTransaction`) and the session status inside one MongoDB transaction: all or nothing. Spending is a conditional update ("only if the balance is at least this much"), so balances never go negative. Status changes are conditional too (`scheduled → completed` happens once), so the teacher is paid exactly once. Tests fire simultaneous accepts and confirms; MongoDB detects the write conflicts and retries, and the results stay correct. The ledger always adds up to the balance, and the tests check that.
 - **Consistent API.** Every response is `{ success, data, meta? }` or `{ success: false, error: { code, message, details? } }`, produced by one central error handler.
 
 ---
@@ -138,6 +143,7 @@ All routes are under `/api`. 🔒 = requires `Authorization: Bearer <accessToken
 | GET | `/users/meta` | Skill categories and levels |
 | GET 🔒 | `/users` | Explore: `q, type, category, level, availability, city, page, limit` |
 | GET/PATCH 🔒 | `/users/me` | Read or update my profile |
+| GET 🔒 | `/users/matches` | Smart matching: ranked matches with reasons and open swaps, `page, limit` |
 | GET 🔒 | `/users/:id` | Public profile |
 | POST 🔒 | `/requests` | Send a swap request `{ to, skillId, offeredSkillId?, message? }` |
 | GET 🔒 | `/requests` | Inbox: `box=received\|sent, status, page` |
@@ -147,10 +153,14 @@ All routes are under `/api`. 🔒 = requires `Authorization: Bearer <accessToken
 | GET 🔒 | `/conversations/:id/messages` | History, cursor-paginated: `before, limit` |
 | POST 🔒 | `/conversations/:id/messages` | Send a message (REST fallback) |
 | POST 🔒 | `/conversations/:id/read` | Mark the conversation as read |
+| POST 🔒 | `/sessions` | Propose a session `{ requestId, skill: requested\|offered, scheduledAt, durationMinutes, mode, note? }` |
+| GET 🔒 | `/sessions` | My sessions: `scope=active\|history, page, limit` |
+| PATCH 🔒 | `/sessions/:id/:action` | `accept` (holds credits) · `decline` · `cancel` (refunds) · `confirm` (pays when both have) |
+| GET 🔒 | `/credits` | Balance, held credits and the ledger, `page, limit` |
 
 **Socket events:** `conversation:join`, `conversation:leave`, `message:send`, `message:read`,
 `typing`, `presence:query` (client → server); `message:new`, `message:read`, `typing`,
-`conversation:updated`, `request:new`, `request:updated`, `presence:update` (server → client).
+`conversation:updated`, `request:new`, `request:updated`, `session:updated`, `presence:update` (server → client).
 
 ---
 
@@ -158,14 +168,15 @@ All routes are under `/api`. 🔒 = requires `Authorization: Bearer <accessToken
 
 ### Prerequisites
 - Node.js 20+ and npm
-- MongoDB 7+ running locally (or a MongoDB Atlas connection string)
+- MongoDB: sessions and credits use **transactions**, which need a **replica set**. Atlas and Docker Compose already are one. Locally, `npm run db` (below) starts one for you on port 27018, with no admin rights or system changes needed.
 
 ### 1. API
 ```bash
 cd server
 cp .env.example .env      # then set JWT_ACCESS_SECRET
 npm install
-npm run seed              # optional: 20 demo users + sample requests and chat
+npm run db                # terminal 1: local MongoDB replica set on :27018 (data in server/.data)
+npm run seed              # terminal 2: 20 demo users, requests, chat, sessions and credits
 npm run dev               # http://localhost:4000
 ```
 
@@ -197,7 +208,7 @@ cd client && npm test     # Angular unit tests (Karma/Jasmine)
 | Variable | Example | Notes |
 | --- | --- | --- |
 | `PORT` | `4000` | |
-| `MONGO_URI` | `mongodb://127.0.0.1:27017/skillswap` | |
+| `MONGO_URI` | `mongodb://127.0.0.1:27018/skillswap?replicaSet=rs0` | Must be a replica set for sessions/credits (`npm run db`, Atlas, or Docker Compose) |
 | `CLIENT_URL` | `http://localhost:4200` | CORS origin and socket.io origin (on Render, defaults to the service URL) |
 | `CLIENT_DIST` | `client/dist/client/browser` | Built Angular app to serve; defaults to that path when `NODE_ENV=production` |
 | `JWT_ACCESS_SECRET` | long random string | `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |

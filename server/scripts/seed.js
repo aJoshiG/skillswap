@@ -1,5 +1,5 @@
 /* Seeds the database with demo users whose skills overlap, so Explore and Matching have data.
- * Usage: npm run seed   (WARNING: wipes users, requests, conversations and messages)
+ * Usage: npm run seed   (WARNING: wipes users, requests, conversations, messages, sessions and credits)
  */
 const mongoose = require('mongoose');
 const env = require('../src/config/env');
@@ -8,12 +8,16 @@ const RefreshToken = require('../src/models/RefreshToken');
 const SwapRequest = require('../src/models/SwapRequest');
 const Conversation = require('../src/models/Conversation');
 const Message = require('../src/models/Message');
+const Session = require('../src/models/Session');
+const CreditTransaction = require('../src/models/CreditTransaction');
+const { WELCOME_CREDITS } = require('../src/config/constants');
 
 const PASSWORD = 'password123';
 
 const s = (name, category, level) => ({ name, category, level });
 
-const avatar = (seed) => `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(seed)}`;
+const avatar = (seed) =>
+  `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(seed)}`;
 
 const users = [
   {
@@ -23,7 +27,10 @@ const users = [
     location: { city: 'Pune', country: 'India' },
     availability: 'both',
     languages: ['English', 'Hindi'],
-    skillsOffered: [s('JavaScript', 'programming', 'expert'), s('Angular', 'programming', 'intermediate')],
+    skillsOffered: [
+      s('JavaScript', 'programming', 'expert'),
+      s('Angular', 'programming', 'intermediate'),
+    ],
     skillsWanted: [s('Guitar', 'music', 'beginner'), s('Spanish', 'languages', 'beginner')],
   },
   {
@@ -33,7 +40,10 @@ const users = [
     availability: 'both',
     languages: ['English', 'Hindi', 'Marathi'],
     skillsOffered: [s('Guitar', 'music', 'expert'), s('Music Theory', 'music', 'intermediate')],
-    skillsWanted: [s('JavaScript', 'programming', 'beginner'), s('Python', 'programming', 'beginner')],
+    skillsWanted: [
+      s('JavaScript', 'programming', 'beginner'),
+      s('Python', 'programming', 'beginner'),
+    ],
   },
   {
     name: 'Carlos Mendez',
@@ -69,7 +79,10 @@ const users = [
     availability: 'online',
     languages: ['English', 'French'],
     skillsOffered: [s('Piano', 'music', 'expert'), s('Photography', 'arts', 'intermediate')],
-    skillsWanted: [s('Spanish', 'languages', 'beginner'), s('JavaScript', 'programming', 'beginner')],
+    skillsWanted: [
+      s('Spanish', 'languages', 'beginner'),
+      s('JavaScript', 'programming', 'beginner'),
+    ],
   },
   {
     name: 'Kenji Tanaka',
@@ -86,8 +99,14 @@ const users = [
     location: { city: 'Pune', country: 'India' },
     availability: 'in-person',
     languages: ['English', 'Malayalam', 'Hindi'],
-    skillsOffered: [s('Indian Cooking', 'cooking', 'expert'), s('Baking', 'cooking', 'intermediate')],
-    skillsWanted: [s('Digital Marketing', 'business', 'beginner'), s('Photography', 'arts', 'beginner')],
+    skillsOffered: [
+      s('Indian Cooking', 'cooking', 'expert'),
+      s('Baking', 'cooking', 'intermediate'),
+    ],
+    skillsWanted: [
+      s('Digital Marketing', 'business', 'beginner'),
+      s('Photography', 'arts', 'beginner'),
+    ],
   },
   {
     name: 'Lucas Martin',
@@ -95,7 +114,10 @@ const users = [
     location: { city: 'Paris', country: 'France' },
     availability: 'online',
     languages: ['French', 'English'],
-    skillsOffered: [s('Digital Marketing', 'business', 'expert'), s('French', 'languages', 'expert')],
+    skillsOffered: [
+      s('Digital Marketing', 'business', 'expert'),
+      s('French', 'languages', 'expert'),
+    ],
     skillsWanted: [s('Japanese', 'languages', 'beginner'), s('Piano', 'music', 'beginner')],
   },
   {
@@ -113,7 +135,10 @@ const users = [
     location: { city: 'Hyderabad', country: 'India' },
     availability: 'both',
     languages: ['English', 'Telugu'],
-    skillsOffered: [s('Data Structures', 'programming', 'expert'), s('Calculus', 'academics', 'expert')],
+    skillsOffered: [
+      s('Data Structures', 'programming', 'expert'),
+      s('Calculus', 'academics', 'expert'),
+    ],
     skillsWanted: [s('Public Speaking', 'business', 'beginner'), s('Guitar', 'music', 'beginner')],
   },
   {
@@ -122,8 +147,14 @@ const users = [
     location: { city: 'Singapore', country: 'Singapore' },
     availability: 'online',
     languages: ['English', 'Mandarin'],
-    skillsOffered: [s('Public Speaking', 'business', 'expert'), s('Mandarin', 'languages', 'expert')],
-    skillsWanted: [s('Data Structures', 'programming', 'beginner'), s('Baking', 'cooking', 'beginner')],
+    skillsOffered: [
+      s('Public Speaking', 'business', 'expert'),
+      s('Mandarin', 'languages', 'expert'),
+    ],
+    skillsWanted: [
+      s('Data Structures', 'programming', 'beginner'),
+      s('Baking', 'cooking', 'beginner'),
+    ],
   },
   {
     name: 'Omar Haddad',
@@ -131,7 +162,10 @@ const users = [
     location: { city: 'Dubai', country: 'UAE' },
     availability: 'both',
     languages: ['Arabic', 'English'],
-    skillsOffered: [s('Strength Training', 'fitness', 'expert'), s('Arabic', 'languages', 'expert')],
+    skillsOffered: [
+      s('Strength Training', 'fitness', 'expert'),
+      s('Arabic', 'languages', 'expert'),
+    ],
     skillsWanted: [s('Python', 'programming', 'beginner'), s('Photography', 'arts', 'beginner')],
   },
   {
@@ -149,8 +183,14 @@ const users = [
     location: { city: 'Lagos', country: 'Nigeria' },
     availability: 'online',
     languages: ['English', 'Yoruba'],
-    skillsOffered: [s('Flutter', 'programming', 'expert'), s('Music Production', 'music', 'intermediate')],
-    skillsWanted: [s('UI Design', 'design', 'intermediate'), s('Personal Finance', 'business', 'beginner')],
+    skillsOffered: [
+      s('Flutter', 'programming', 'expert'),
+      s('Music Production', 'music', 'intermediate'),
+    ],
+    skillsWanted: [
+      s('UI Design', 'design', 'intermediate'),
+      s('Personal Finance', 'business', 'beginner'),
+    ],
   },
   {
     name: 'Meera Iyer',
@@ -158,7 +198,10 @@ const users = [
     location: { city: 'Chennai', country: 'India' },
     availability: 'both',
     languages: ['English', 'Tamil'],
-    skillsOffered: [s('Classical Dance', 'arts', 'expert'), s('Carnatic Vocals', 'music', 'intermediate')],
+    skillsOffered: [
+      s('Classical Dance', 'arts', 'expert'),
+      s('Carnatic Vocals', 'music', 'intermediate'),
+    ],
     skillsWanted: [s('JavaScript', 'programming', 'beginner'), s('Excel', 'business', 'beginner')],
   },
   {
@@ -168,7 +211,10 @@ const users = [
     availability: 'online',
     languages: ['German', 'English'],
     skillsOffered: [s('German', 'languages', 'expert'), s('Physics', 'academics', 'expert')],
-    skillsWanted: [s('Spanish', 'languages', 'intermediate'), s('Music Production', 'music', 'beginner')],
+    skillsWanted: [
+      s('Spanish', 'languages', 'intermediate'),
+      s('Music Production', 'music', 'beginner'),
+    ],
   },
   {
     name: 'Ananya Das',
@@ -176,7 +222,10 @@ const users = [
     location: { city: 'Kolkata', country: 'India' },
     availability: 'both',
     languages: ['English', 'Bengali'],
-    skillsOffered: [s('Running Coaching', 'fitness', 'expert'), s('Nutrition', 'fitness', 'intermediate')],
+    skillsOffered: [
+      s('Running Coaching', 'fitness', 'expert'),
+      s('Nutrition', 'fitness', 'intermediate'),
+    ],
     skillsWanted: [s('Angular', 'programming', 'beginner'), s('German', 'languages', 'beginner')],
   },
   {
@@ -185,8 +234,14 @@ const users = [
     location: { city: 'Lisbon', country: 'Portugal' },
     availability: 'online',
     languages: ['Portuguese', 'English', 'Spanish'],
-    skillsOffered: [s('React', 'programming', 'intermediate'), s('Portuguese', 'languages', 'expert')],
-    skillsWanted: [s('Angular', 'programming', 'intermediate'), s('Strength Training', 'fitness', 'beginner')],
+    skillsOffered: [
+      s('React', 'programming', 'intermediate'),
+      s('Portuguese', 'languages', 'expert'),
+    ],
+    skillsWanted: [
+      s('Angular', 'programming', 'intermediate'),
+      s('Strength Training', 'fitness', 'beginner'),
+    ],
   },
   {
     name: 'Hana Kim',
@@ -207,10 +262,20 @@ async function seed() {
     SwapRequest.deleteMany({}),
     Conversation.deleteMany({}),
     Message.deleteMany({}),
+    Session.deleteMany({}),
+    CreditTransaction.deleteMany({}),
   ]);
   // syncIndexes (not just init) also drops indexes the schemas no longer define,
   // e.g. the old unique index on Conversation.request.
-  for (const model of [User, RefreshToken, SwapRequest, Conversation, Message]) {
+  for (const model of [
+    User,
+    RefreshToken,
+    SwapRequest,
+    Conversation,
+    Message,
+    Session,
+    CreditTransaction,
+  ]) {
     await model.syncIndexes();
   }
 
@@ -275,8 +340,87 @@ async function seed() {
   conversation.lastMessage = { text: last.text, sender: last.sender, createdAt: last.createdAt };
   await conversation.save();
 
+  await seedSessionsAndCredits({ created, demo, riya, accepted, now });
+
   console.log(`Seeded ${created.length} users. Log in as demo@skillswap.dev / ${PASSWORD}`);
   await mongoose.disconnect();
+}
+
+/**
+ * Time credits: everyone gets the welcome credits, then Demo and Riya have a short history on their
+ * accepted swap (two completed lessons, one upcoming, one proposal waiting for Demo). The ledger is
+ * written entry by entry, so each user's ledger adds up to their balance, like in the app.
+ */
+async function seedSessionsAndCredits({ created, demo, riya, accepted, now }) {
+  const day = 24 * 3600 * 1000;
+  const balance = new Map(created.map((u) => [String(u._id), 0]));
+  const entries = [];
+  const ledger = (user, amount, type, session, at) => {
+    const after = balance.get(String(user._id)) + amount;
+    balance.set(String(user._id), after);
+    entries.push({
+      user: user._id,
+      amount,
+      balanceAfter: after,
+      type,
+      session,
+      createdAt: new Date(at),
+    });
+  };
+  // Welcome credits: dated two weeks back, before the lessons below.
+  for (const u of created) ledger(u, WELCOME_CREDITS, 'welcome', null, now - 14 * day);
+
+  const guitar = accepted.offeredSkill; // Riya teaches Demo
+  const javascript = accepted.skill; // Demo teaches Riya
+  const session = (teacher, learner, skill, at, minutes, extra) =>
+    Session.create({
+      request: accepted._id,
+      teacher: teacher._id,
+      learner: learner._id,
+      skill,
+      scheduledAt: new Date(at),
+      durationMinutes: minutes,
+      credits: minutes / 60,
+      mode: 'online',
+      proposedBy: learner._id,
+      ...extra,
+    });
+
+  const completed = { status: 'completed', confirmedBy: [demo._id, riya._id] };
+  const lesson1 = await session(riya, demo, guitar, now - 5 * day, 60, {
+    ...completed,
+    note: 'First chords: G, C, D and Em',
+    completedAt: new Date(now - 5 * day + 3600e3),
+  });
+  ledger(demo, -1, 'session-hold', lesson1._id, now - 6 * day);
+  ledger(riya, 1, 'session-earned', lesson1._id, now - 5 * day + 3600e3);
+
+  const lesson2 = await session(demo, riya, javascript, now - 3 * day, 90, {
+    ...completed,
+    note: 'Variables, functions and the DOM',
+    completedAt: new Date(now - 3 * day + 5400e3),
+  });
+  ledger(riya, -1.5, 'session-hold', lesson2._id, now - 4 * day);
+  ledger(demo, 1.5, 'session-earned', lesson2._id, now - 3 * day + 5400e3);
+
+  const upcoming = await session(demo, riya, javascript, now + 2 * day, 60, {
+    status: 'scheduled',
+    note: 'Fetch and async/await',
+    respondedAt: new Date(now - day),
+  });
+  ledger(riya, -1, 'session-hold', upcoming._id, now - day);
+
+  // Waiting for Demo to accept: Riya offers a guitar lesson in person in Pune.
+  await session(riya, demo, guitar, now + 4 * day, 60, {
+    mode: 'in-person',
+    proposedBy: riya._id,
+    note: 'Café near FC Road? I will bring a spare guitar.',
+  });
+
+  await CreditTransaction.collection.insertMany(entries);
+  await Promise.all(
+    [...balance].map(([id, credits]) => User.updateOne({ _id: id }, { $set: { credits } })),
+  );
 }
 
 seed().catch(async (err) => {

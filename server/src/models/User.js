@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const { SKILL_LEVELS, SKILL_CATEGORIES } = require('../config/constants');
+const { SKILL_LEVELS, SKILL_CATEGORIES, WELCOME_CREDITS } = require('../config/constants');
 
 const skillSchema = new mongoose.Schema(
   {
@@ -28,6 +28,9 @@ const userSchema = new mongoose.Schema(
     skillsOffered: { type: [skillSchema], default: [] },
     skillsWanted: { type: [skillSchema], default: [] },
     lastActiveAt: { type: Date, default: Date.now },
+    // Spendable time credits (private). Every change goes through a transaction that also writes
+    // a CreditTransaction, so the ledger always adds up to this balance.
+    credits: { type: Number, default: WELCOME_CREDITS, min: 0 },
   },
   {
     timestamps: true,

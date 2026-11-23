@@ -24,12 +24,22 @@ import { Avatar } from '../../shared/components/avatar';
 import { SkillChip } from '../../shared/components/skill-chip';
 import { Spinner } from '../../shared/components/spinner';
 import { TimeAgoPipe } from '../../shared/pipes/time-ago.pipe';
+import { ScheduleModal } from '../sessions/schedule-modal';
 
 const TYPING_IDLE_MS = 2000;
 
 @Component({
   selector: 'app-chat-thread',
-  imports: [FormsModule, RouterLink, DatePipe, Avatar, SkillChip, Spinner, TimeAgoPipe],
+  imports: [
+    FormsModule,
+    RouterLink,
+    DatePipe,
+    Avatar,
+    SkillChip,
+    Spinner,
+    TimeAgoPipe,
+    ScheduleModal,
+  ],
   host: { class: 'flex min-h-0 flex-1 flex-col' },
   template: `
     @if (conversation(); as c) {
@@ -65,7 +75,30 @@ const TYPING_IDLE_MS = 2000;
             ⇄ <app-skill-chip [skill]="c.request.offeredSkill" variant="want" [showLevel]="false" />
           }
         </div>
+        @if (c.request.status === 'accepted') {
+          <button
+            class="btn-secondary btn-sm ml-auto shrink-0 lg:ml-2"
+            (click)="scheduling.set(true)"
+            aria-label="Schedule a session"
+          >
+            📅 <span class="hidden sm:inline">Schedule</span>
+          </button>
+        }
       </header>
+      @if (scheduling()) {
+        <app-schedule-modal
+          [swap]="{
+            requestId: c.request._id,
+            fromId: c.request.from,
+            toId: c.request.to,
+            skill: c.request.skill,
+            offeredSkill: c.request.offeredSkill,
+            otherName: c.otherUser?.name ?? 'them',
+          }"
+          (closed)="scheduling.set(false)"
+          (proposed)="scheduling.set(false)"
+        />
+      }
 
       <div
         #scroller
@@ -165,6 +198,8 @@ export class ChatThread {
   readonly conversationId = input.required<string>();
 
   protected readonly conversation = signal<Conversation | null>(null);
+  /** Whether the schedule-a-session dialog is open. */
+  protected readonly scheduling = signal(false);
   protected readonly messages = signal<Message[]>([]);
   protected readonly loading = signal(true);
   protected readonly loadingOlder = signal(false);

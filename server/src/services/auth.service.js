@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const RefreshToken = require('../models/RefreshToken');
 const ApiError = require('../utils/ApiError');
+const { recordWelcome } = require('./credit.service');
 const env = require('../config/env');
 const { signAccessToken, generateRefreshToken, hashToken } = require('../utils/tokens');
 
@@ -30,6 +31,7 @@ async function register({ name, email, password }) {
   if (exists) throw ApiError.conflict('An account with this email already exists');
 
   const user = await User.create({ name, email, password });
+  await recordWelcome(user);
   return { user, ...(await issueTokens(user._id)) };
 }
 

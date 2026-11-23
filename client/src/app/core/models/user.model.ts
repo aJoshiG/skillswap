@@ -40,6 +40,8 @@ export interface PublicUser {
 
 export interface User extends PublicUser {
   email: string;
+  /** Spendable time credits (private to the user). */
+  credits: number;
 }
 
 export interface UserPreview {
