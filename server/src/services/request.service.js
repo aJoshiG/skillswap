@@ -76,16 +76,19 @@ async function list(userId, { box, status, page, limit }) {
     SwapRequest.countDocuments(filter),
   ]);
 
-  // Attach the chat id to accepted requests so the client can link straight to it.
-  const acceptedIds = items.filter((r) => r.status === 'accepted').map((r) => r._id);
-  const conversations = acceptedIds.length
-    ? await Conversation.find({ request: { $in: acceptedIds } }).select('_id request').lean()
+  // Attach the chat id to accepted requests so the client can link straight to it. There is one
+  // conversation per pair of users, so look it up by the pair (older accepted swaps between the
+  // same two people share it, even though it points at the latest swap).
+  const pairOf = (r) => Conversation.pairKeyFor(r.from._id ?? r.from, r.to._id ?? r.to);
+  const pairKeys = [...new Set(items.filter((r) => r.status === 'accepted').map(pairOf))];
+  const conversations = pairKeys.length
+    ? await Conversation.find({ pairKey: { $in: pairKeys } }).select('_id pairKey').lean()
     : [];
-  const conversationByRequest = new Map(conversations.map((c) => [String(c.request), c._id]));
+  const conversationByPair = new Map(conversations.map((c) => [c.pairKey, c._id]));
 
   const withChat = items.map((r) => ({
     ...r.toJSON(),
-    conversationId: conversationByRequest.get(String(r._id)) ?? null,
+    conversationId: r.status === 'accepted' ? (conversationByPair.get(pairOf(r)) ?? null) : null,
   }));
   return { items: withChat, meta: pageMeta(page, limit, total) };
 }

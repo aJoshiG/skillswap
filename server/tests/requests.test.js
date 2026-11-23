@@ -87,6 +87,13 @@ describe('Swap requests', () => {
     expect(list.body.data).toHaveLength(1);
     // The thread points at the latest swap, so the chat header shows the current skills.
     expect(list.body.data[0].request.skill.name).toBe('Python');
+
+    // Both accepted requests (old and new) still link to that one chat in the inboxes.
+    const sent = await api().get('/api/requests?box=sent').set(auth(learner.token)).expect(200);
+    const received = await api().get('/api/requests?box=received').set(auth(learner.token));
+    const accepted = [...sent.body.data, ...received.body.data].filter((r) => r.status === 'accepted');
+    expect(accepted).toHaveLength(2);
+    expect(accepted.map((r) => r.conversationId)).toEqual([first.conversationId, first.conversationId]);
   });
 
   it('only the sender can cancel, and declined requests do not open chats', async () => {
