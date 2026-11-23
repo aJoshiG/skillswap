@@ -27,9 +27,10 @@ const refreshLimiter = rateLimit({
   message: limitedResponse,
 });
 
+// Per IP. Configurable because end-to-end tests run many simulated users from one IP.
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
-  limit: env.isTest ? 10_000 : 300,
+  limit: env.isTest ? 10_000 : env.apiRateLimitPerMinute,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   message: limitedResponse,

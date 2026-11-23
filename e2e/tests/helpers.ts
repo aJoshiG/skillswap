@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import { Browser, Page, expect } from '@playwright/test';
+import { BrowserContext, Page, test as base, expect } from '@playwright/test';
 
 const serverDir = process.env.E2E_SERVER_DIR ?? path.resolve(__dirname, '../../server');
 const mongoUri = process.env.E2E_MONGO_URI!;
@@ -38,12 +38,25 @@ export async function login(page: Page, email: string, password = PASSWORD): Pro
   await expect(page).not.toHaveURL(/\/login/);
 }
 
-/** A separate browser session (own cookies), logged in as `email`. */
-export async function userPage(browser: Browser, email: string): Promise<Page> {
-  const page = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
-  await login(page, email);
-  return page;
-}
+/**
+ * Test with an `as(email)` fixture: opens a separate browser session (own cookies) logged in as
+ * that user. Every session it opens is closed when the test ends, so no logged-in windows (and
+ * their live sockets) leak into later tests.
+ */
+export const test = base.extend<{ as: (email: string) => Promise<Page> }>({
+  as: async ({ browser }, use) => {
+    const contexts: BrowserContext[] = [];
+    await use(async (email: string) => {
+      const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+      contexts.push(context);
+      const page = await context.newPage();
+      await login(page, email);
+      return page;
+    });
+    await Promise.all(contexts.map((c) => c.close()));
+  },
+});
+export { expect };
 
 /** The latest toast message on the page. */
 export const toast = (page: Page) => page.locator('app-toast-container p').last();

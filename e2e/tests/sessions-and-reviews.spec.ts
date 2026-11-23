@@ -1,11 +1,11 @@
-import { expect, test } from '@playwright/test';
-import { creditsPill, reseed, toast, userPage, withDb } from './helpers';
+
+import { creditsPill, reseed, toast, test, expect, withDb } from './helpers';
 
 test.beforeEach(reseed);
 
-test('credits: accept holds, both confirm pays the teacher, cancel refunds', async ({ browser }) => {
-  const demo = await userPage(browser, 'demo@skillswap.dev');
-  const riya = await userPage(browser, 'riya@skillswap.dev');
+test('credits: accept holds, both confirm pays the teacher, cancel refunds', async ({ as }) => {
+  const demo = await as('demo@skillswap.dev');
+  const riya = await as('riya@skillswap.dev');
   await expect(creditsPill(demo)).toHaveText(/2\.5/);
 
   // Riya proposed an in-person guitar lesson (seed): Demo accepts, 1 credit is held.
@@ -56,9 +56,9 @@ test('credits: accept holds, both confirm pays the teacher, cancel refunds', asy
   await expect(demo.locator('aside')).toContainText('Taught JavaScript to Riya Sharma');
 });
 
-test('schedule a session from the chat header', async ({ browser }) => {
-  const riya = await userPage(browser, 'riya@skillswap.dev');
-  const demo = await userPage(browser, 'demo@skillswap.dev');
+test('schedule a session from the chat header', async ({ as }) => {
+  const riya = await as('riya@skillswap.dev');
+  const demo = await as('demo@skillswap.dev');
   await riya.goto('/messages');
   await riya.locator('a[href*="/messages/"]').first().click();
   await riya.getByRole('button', { name: /schedule a session/i }).click();
@@ -75,9 +75,9 @@ test('schedule a session from the chat header', async ({ browser }) => {
   await expect(demo.locator('li.card').filter({ hasText: '30 min' })).toContainText('Riya teaches you Guitar');
 });
 
-test('review after a completed session, then see it on their profile', async ({ browser }) => {
-  const demo = await userPage(browser, 'demo@skillswap.dev');
-  const riya = await userPage(browser, 'riya@skillswap.dev');
+test('review after a completed session, then see it on their profile', async ({ as }) => {
+  const demo = await as('demo@skillswap.dev');
+  const riya = await as('riya@skillswap.dev');
   await demo.goto('/sessions');
   await demo.getByRole('tab', { name: 'History' }).click();
   await demo.getByRole('button', { name: /review riya/i }).click();

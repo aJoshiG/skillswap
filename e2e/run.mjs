@@ -9,7 +9,7 @@
  * Locally without Chrome: PW_CHANNEL=msedge npm test
  */
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { createWriteStream, existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -67,13 +67,19 @@ try {
     JWT_ACCESS_SECRET: 'e2e-only-secret-not-for-production',
     COOKIE_SECURE: 'false',
     COOKIE_SAMESITE: 'lax',
+    // Every simulated user shares one IP here, so lift the per-IP API limit (production keeps 300).
+    API_RATE_LIMIT_PER_MINUTE: '5000',
   };
 
   console.log('▶ Seeding demo data');
   await run('node', ['scripts/seed.js'], { cwd: serverDir, env, stdio: ['ignore', 'ignore', 'inherit'] });
 
   console.log(`▶ Starting server on ${BASE_URL}`);
-  server = spawn('node', ['src/server.js'], { cwd: serverDir, env, stdio: ['ignore', 'ignore', 'inherit'] });
+  // The server's request log goes to e2e/server.log (useful when a test fails, also in CI).
+  const log = createWriteStream(path.join(path.dirname(fileURLToPath(import.meta.url)), 'server.log'));
+  server = spawn('node', ['src/server.js'], { cwd: serverDir, env, stdio: ['ignore', 'pipe', 'pipe'] });
+  server.stdout.pipe(log);
+  server.stderr.pipe(log);
   await waitForHealth(`${BASE_URL}/api/health`);
 
   console.log('▶ Running Playwright');

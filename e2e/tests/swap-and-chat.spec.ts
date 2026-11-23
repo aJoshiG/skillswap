@@ -1,11 +1,11 @@
-import { expect, test } from '@playwright/test';
-import { reseed, toast, userPage } from './helpers';
+
+import { reseed, toast, test, expect } from './helpers';
 
 test.beforeAll(reseed);
 
-test('request → accept → real-time chat between two people', async ({ browser }) => {
-  const demo = await userPage(browser, 'demo@skillswap.dev');
-  const kabir = await userPage(browser, 'kabir@skillswap.dev');
+test('request → accept → real-time chat between two people', async ({ as }) => {
+  const demo = await as('demo@skillswap.dev');
+  const kabir = await as('kabir@skillswap.dev');
 
   // Demo already asked Kabir for Python (seed). Kabir sees it in the inbox and accepts.
   await kabir.goto('/requests');
@@ -36,8 +36,8 @@ test('request → accept → real-time chat between two people', async ({ browse
   await expect(demo.getByText('Tomorrow evening works 🐍').last()).toBeVisible();
 });
 
-test('a received request can be declined', async ({ browser }) => {
-  const demo = await userPage(browser, 'demo@skillswap.dev');
+test('a received request can be declined', async ({ as }) => {
+  const demo = await as('demo@skillswap.dev');
   await demo.goto('/requests');
   const fromCarlos = demo.locator('article').filter({ hasText: 'Carlos Mendez' });
   await fromCarlos.getByRole('button', { name: 'Decline' }).click();
