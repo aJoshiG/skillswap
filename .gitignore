@@ -25,3 +25,7 @@ Thumbs.db
 
 # Local dev replica set data (npm run db)
 server/.data/
+
+# Playwright output
+e2e/test-results/
+e2e/playwright-report/
