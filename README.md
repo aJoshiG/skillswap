@@ -13,7 +13,7 @@ find each other, send swap requests, and chat in real time once a request is acc
 ![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?logo=mongodb&logoColor=white)
 ![Socket.io](https://img.shields.io/badge/Socket.io-4-010101?logo=socket.io&logoColor=white)
 
-> 🔗 **Live demo:** _coming soon_ · Use **“Try the demo account”** on the login page.
+> 🔗 **Live demo: [skillswap-7dfr.onrender.com](https://skillswap-7dfr.onrender.com)** · Click **“Try the demo account”** on the login page. (Free hosting: the first visit after a quiet spell can take ~50s to wake up.)
 
 <!-- Screenshots: add images to docs/ and reference them here -->
 <!-- ![Explore page](docs/explore.png) ![Chat](docs/chat.png) -->
@@ -114,7 +114,7 @@ erDiagram
 
 ## 🧠 Key design decisions
 
-- **Token strategy.** The access token (15 min) lives only in memory, so injected scripts can't read it from `localStorage`. The refresh token is an opaque random string in an `httpOnly` cookie scoped to `/api/auth`, and only its SHA-256 hash is stored. Every refresh **rotates** the token. Presenting an already-used token is treated as theft, and all of that user's sessions are revoked.
+- **Token strategy.** The access token (15 min) lives only in memory, so injected scripts can't read it from `localStorage`. The refresh token is an opaque random string in an `httpOnly` cookie scoped to `/api/auth`, and only its SHA-256 hash is stored. Every refresh **rotates** the token. Presenting an already-used token is treated as theft, and all of that user's sessions are revoked. The exception is a **30-second grace period** right after rotation: if a page reloads mid-refresh, the browser never stores the new cookie and resends the old one. Testing on the live deploy caught this, since it only shows up with real network latency.
 - **Silent refresh.** The interceptor catches a 401, refreshes once and retries the request. Concurrent requests share a single refresh call (`shareReplay`), so a burst of 401s doesn't cause a burst of refreshes.
 - **Socket auth.** The socket.io handshake must carry a valid access token. Each user joins a private `user:<id>` room (for request and inbox events). Joining a `conversation:<id>` room is checked against the database, and typing events are only relayed to rooms the socket was allowed into.
 - **Race-safe state changes.** Accept, decline and cancel use a conditional `findOneAndUpdate({ status: 'pending' })`, so two clicks can't both succeed. Duplicate pending requests are blocked by a **partial unique index**, not just an application-level check.

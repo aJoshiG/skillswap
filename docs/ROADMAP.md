@@ -3,7 +3,7 @@
 Goal: a working, deployed MEAN-stack app (MongoDB, Express, Angular, Node) good enough to
 put on a resume and GitHub. Tick items off here as they're finished.
 
-**Next step:** Phase 2, create the Render service from `render.yaml` (Render → New → Blueprint), enter `MONGO_URI`.
+**Next step:** Phase 3, smart matching (rank two-way swaps with an aggregation pipeline).
 
 ---
 
@@ -32,16 +32,19 @@ put on a resume and GitHub. Tick items off here as they're finished.
 - Note: Docker isn't installed on this machine, so run natively; a MongoDB 8.0 Windows service is on :27017.
   Run client tests with `CHROME_BIN` pointing at Edge.
 
-## Phase 2: Put it on GitHub and deploy it (the most important part for a resume)
+## ✅ Phase 2: Put it on GitHub and deploy it (done, 2026-11-23)
 - [x] Create a GitHub repo, push, get CI green, add the CI badge to the README (github.com/aJoshiG/skillswap, 2026-11-23)
 - [x] MongoDB Atlas free cluster (a replica set, so transactions work for Phase 3), AWS, created 2026-11-23.
       DB user password rotated, role reduced to readWriteAnyDatabase, network access 0.0.0.0/0 for Render.
 - [x] Code ready for one-service deploy: Express serves the built Angular app (SPA fallback, caching,
       CSP), production client uses same-origin `/api`, root `package.json` build/start, `render.yaml`
       blueprint, `npm run seed:atlas`. Tested locally in production mode: 54 API checks + UI walkthrough.
-- [ ] Create the Render service from `render.yaml` (New → Blueprint), enter `MONGO_URI`
+- [x] Render service from `render.yaml`, live at https://skillswap-7dfr.onrender.com (2026-11-23)
 - [x] Seed the demo data into Atlas (`npm run seed:atlas`, 2026-11-23)
-- [ ] Put the live link in the README
+- [x] Put the live link in the README
+- [x] Verified live: 55 API/socket checks + two-browser UI walkthrough. Found and fixed a bug that only
+      showed up on real network latency (reloading during a token refresh logged users out everywhere):
+      30s grace period for reusing a just-rotated refresh token, with tests.
 
 ## Phase 3: Standout features (pick at least the first two)
 - [ ] **Smart matching.** A "Best matches" page ranking two-way swaps (A teaches what B wants and B teaches
