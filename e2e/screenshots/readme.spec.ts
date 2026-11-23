@@ -53,6 +53,11 @@ test('README screenshots and tour GIF', async ({ browser }) => {
   await page.goto('/matches');
   frames.push(await shoot(page, 'matches'));
 
+  await page.getByRole('button', { name: /^Notifications/ }).click();
+  await page.locator('#notification-panel li').first().waitFor();
+  frames.push(await shoot(page, 'notifications'));
+  await page.keyboard.press('Escape');
+
   await page.locator('ol > li a').first().click();
   await page.locator('#reviews li').first().waitFor();
   frames.push(await shoot(page, 'profile'));

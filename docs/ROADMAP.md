@@ -109,5 +109,8 @@ put on a resume and GitHub. Tick items off here as they're finished.
   under concurrent requests.
 - Secured auth with in-memory JWTs and rotating httpOnly refresh tokens with theft detection; found and fixed a
   latency-only session bug by testing the live deployment.
-- 41 API tests (Jest/Supertest), 9 Angular unit tests and 15 Playwright end-to-end tests with axe-core WCAG 2.1
-  AA checks, all in GitHub Actions CI.
+- Added a self-healing background job that auto-resolves unconfirmed sessions (safe to rerun or run
+  concurrently) and a real-time notifications centre (WebSocket push, partial index for unread counts,
+  90-day TTL) designed so a notification failure can never break the action that triggered it.
+- 52 API tests (Jest/Supertest), 16 Angular unit tests and 16 Playwright end-to-end tests with axe-core
+  WCAG 2.1 AA checks, all in GitHub Actions CI.
