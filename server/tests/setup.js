@@ -8,7 +8,9 @@ let replSet;
 beforeAll(async () => {
   // A replica set (not a standalone server) so tests can use transactions later.
   replSet = await MongoMemoryReplSet.create({ replSet: { count: 1, storageEngine: 'wiredTiger' } });
-  await mongoose.connect(replSet.getUri());
+  // mongodb driver 7.8 loads `os` via dynamic import(), which Jest's CommonJS sandbox rejects;
+  // the handshake then goes out without client metadata and mongod refuses it. Supply `os` directly.
+  await mongoose.connect(replSet.getUri(), { runtimeAdapters: { os: require('os') } });
   // Build indexes (text search, unique constraints) before tests rely on them.
   await Promise.all(Object.values(mongoose.models).map((model) => model.init()));
 });
