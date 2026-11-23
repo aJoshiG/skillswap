@@ -15,8 +15,15 @@ find each other, send swap requests, and chat in real time once a request is acc
 
 > 🔗 **Live demo: [skillswap-7dfr.onrender.com](https://skillswap-7dfr.onrender.com)** · Click **“Try the demo account”** on the login page. (Free hosting: the first visit after a quiet spell can take ~50s to wake up.)
 
-<!-- Screenshots: add images to docs/ and reference them here -->
-<!-- ![Explore page](docs/explore.png) ![Chat](docs/chat.png) -->
+<p align="center">
+  <img src="docs/images/tour.gif" alt="A tour of SkillSwap: home, ranked matches, a profile with reviews, real-time chat, scheduling a session, the sessions page with credits, and leaving a review" width="800">
+</p>
+
+| Smart matches | Real-time chat | Sessions & credits |
+| --- | --- | --- |
+| <img src="docs/images/matches.png" alt="Matches page ranking two-way skill swaps first, with reasons and ratings" width="300"> | <img src="docs/images/chat.png" alt="Chat between two users with read receipts and a Schedule button" width="300"> | <img src="docs/images/sessions.png" alt="Sessions page with upcoming lessons, credit balance and recent activity" width="300"> |
+| **Profile & reviews** | **Schedule a session** | **Mobile** |
+| <img src="docs/images/profile.png" alt="Profile with rating, teaching record and reviews" width="300"> | <img src="docs/images/schedule.png" alt="Dialog to schedule a session, showing price and who pays" width="300"> | <img src="docs/images/mobile-matches.png" alt="Matches page on a phone" width="140"> |
 
 ---
 
@@ -207,7 +214,10 @@ docker compose exec server node scripts/seed.js # demo data
 ```bash
 cd server && npm test     # Jest + Supertest against an in-memory MongoDB replica set
 cd client && npm test     # Angular unit tests (Karma/Jasmine)
+cd e2e && npm test        # Playwright end-to-end + axe accessibility (needs: client built)
 ```
+
+The **end-to-end suite** starts everything from scratch: an in-memory MongoDB replica set, the demo seed, and the real server in production mode serving the built app. Then it drives real browsers through every main flow: sign-up to matches, two-person real-time chat, the credits lifecycle (hold, confirm, pay, refund), keyboard-only reviews, and **axe-core WCAG 2.1 AA checks** on every page and dialog. CI runs it on every push. `npm run screenshots` in `e2e/` regenerates the images in this README.
 
 ---
 
