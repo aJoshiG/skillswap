@@ -3,7 +3,7 @@
 Goal: a working, deployed MEAN-stack app (MongoDB, Express, Angular, Node) good enough to
 put on a resume and GitHub. Tick items off here as they're finished.
 
-**Next step:** Phase 2, create the GitHub repo and push.
+**Next step:** Phase 2, set up a MongoDB Atlas free cluster, then deploy.
 
 ---
 
@@ -33,7 +33,7 @@ put on a resume and GitHub. Tick items off here as they're finished.
   Run client tests with `CHROME_BIN` pointing at Edge.
 
 ## Phase 2: Put it on GitHub and deploy it (the most important part for a resume)
-- [ ] Create a GitHub repo, push, get CI green, add the CI badge to the README
+- [x] Create a GitHub repo, push, get CI green, add the CI badge to the README (github.com/aJoshiG/skillswap, 2026-11-23)
 - [ ] MongoDB Atlas free cluster (a replica set, so transactions work for Phase 3)
 - [ ] Deploy as **one service**: Express also serves the built Angular app, so the client and API share
       an origin. Then cookies, CORS and WebSockets need no cross-site setup.

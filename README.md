@@ -4,6 +4,7 @@
 skill-exchange platform. People list the skills they can teach and the skills they want to learn,
 find each other, send swap requests, and chat in real time once a request is accepted.
 
+[![CI](https://github.com/aJoshiG/skillswap/actions/workflows/ci.yml/badge.svg)](https://github.com/aJoshiG/skillswap/actions/workflows/ci.yml)
 ![Angular](https://img.shields.io/badge/Angular-20-DD0031?logo=angular&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
