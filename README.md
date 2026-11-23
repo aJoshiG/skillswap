@@ -254,4 +254,4 @@ The free Render tier sleeps after ~15 minutes idle, so the first visit after a w
 
 ---
 
-Built by **[Your Name](https://github.com/your-username)** as a portfolio project · [LinkedIn](https://linkedin.com/in/your-profile)
+Built by **[aJoshiG](https://github.com/aJoshiG)** as a portfolio project.
