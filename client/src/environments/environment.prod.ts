@@ -1,6 +1,6 @@
-// Production: point these at your deployed API (e.g. https://skillswap-api.onrender.com).
+// Production: the Express server serves this app, so the API and WebSocket are on the same origin.
 export const environment = {
   production: true,
-  apiUrl: 'https://YOUR-API-HOST/api',
-  socketUrl: 'https://YOUR-API-HOST',
+  apiUrl: '/api',
+  socketUrl: '',
 };

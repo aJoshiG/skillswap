@@ -3,7 +3,7 @@
 Goal: a working, deployed MEAN-stack app (MongoDB, Express, Angular, Node) good enough to
 put on a resume and GitHub. Tick items off here as they're finished.
 
-**Next step:** Phase 2, set up a MongoDB Atlas free cluster, then deploy.
+**Next step:** Phase 2, load the demo data into Atlas (`server/.env.atlas` + `npm run seed:atlas`), then create the Render service from `render.yaml`.
 
 ---
 
@@ -34,10 +34,12 @@ put on a resume and GitHub. Tick items off here as they're finished.
 
 ## Phase 2: Put it on GitHub and deploy it (the most important part for a resume)
 - [x] Create a GitHub repo, push, get CI green, add the CI badge to the README (github.com/aJoshiG/skillswap, 2026-11-23)
-- [ ] MongoDB Atlas free cluster (a replica set, so transactions work for Phase 3)
-- [ ] Deploy as **one service**: Express also serves the built Angular app, so the client and API share
-      an origin. Then cookies, CORS and WebSockets need no cross-site setup.
-      Host: Render (free web service) or Railway.
+- [x] MongoDB Atlas free cluster (a replica set, so transactions work for Phase 3). Created 2026-11-23;
+      the first auto-generated DB password was shared in chat, so it must be rotated before go-live.
+- [x] Code ready for one-service deploy: Express serves the built Angular app (SPA fallback, caching,
+      CSP), production client uses same-origin `/api`, root `package.json` build/start, `render.yaml`
+      blueprint, `npm run seed:atlas`. Tested locally in production mode: 54 API checks + UI walkthrough.
+- [ ] Create the Render service from `render.yaml` (New → Blueprint), enter `MONGO_URI`
 - [ ] Seed the demo data in production, put the live link in the README
 
 ## Phase 3: Standout features (pick at least the first two)

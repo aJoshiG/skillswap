@@ -4,8 +4,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-# The "docker" configuration keeps apiUrl=/api, since nginx proxies it on the same origin.
-RUN npx ng build --configuration production,docker \
+# Production uses same-origin /api and /socket.io, which nginx proxies to the server.
+RUN npx ng build --configuration production \
   && cp -r dist/client/browser /site
 
 FROM nginx:1.27-alpine

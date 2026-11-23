@@ -197,7 +197,8 @@ cd client && npm test     # Angular unit tests (Karma/Jasmine)
 | --- | --- | --- |
 | `PORT` | `4000` | |
 | `MONGO_URI` | `mongodb://127.0.0.1:27017/skillswap` | |
-| `CLIENT_URL` | `http://localhost:4200` | CORS origin and socket.io origin |
+| `CLIENT_URL` | `http://localhost:4200` | CORS origin and socket.io origin (on Render, defaults to the service URL) |
+| `CLIENT_DIST` | `client/dist/client/browser` | Built Angular app to serve; defaults to that path when `NODE_ENV=production` |
 | `JWT_ACCESS_SECRET` | long random string | `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
 | `JWT_ACCESS_EXPIRES_IN` | `15m` | |
 | `JWT_REFRESH_EXPIRES_DAYS` | `7` | |
@@ -208,10 +209,18 @@ cd client && npm test     # Angular unit tests (Karma/Jasmine)
 
 ## ☁️ Deployment
 
-1. **Database:** create a free MongoDB Atlas cluster and copy the connection string.
-2. **API on Render or Railway:** root `server/`, build `npm ci`, start `npm start`. Set the env vars above with `CLIENT_URL=https://<your-client>`, `COOKIE_SAMESITE=none` and `COOKIE_SECURE=true`.
-3. **Client on Vercel or Netlify:** set `apiUrl` and `socketUrl` in `client/src/environments/environment.prod.ts` to your API URL. Build with `npm run build` and publish `dist/client/browser`. Add a SPA rewrite to `index.html`.
-4. Run the seed once against Atlas: `MONGO_URI=<atlas-uri> npm run seed`.
+SkillSwap deploys as **one service**: in production, Express serves the built Angular app as well as
+the API and socket.io. Everything shares one origin, so there are no cross-site cookies, CORS or
+WebSocket-proxy settings to manage.
+
+1. **Database:** create a free MongoDB Atlas cluster, a database user, and allow network access.
+2. **Render:** *New → Blueprint* → select this repo. [`render.yaml`](render.yaml) defines the service
+   (build `npm run build`, start `npm start`, health check `/api/health`). Enter `MONGO_URI` when asked;
+   `JWT_ACCESS_SECRET` is generated for you.
+3. **Demo data:** put `MONGO_URI=<atlas-uri>` in `server/.env.atlas` (git-ignored), then run
+   `npm run seed:atlas` from `server/`.
+
+The free Render tier sleeps after ~15 minutes idle, so the first visit after a while takes ~30–60s to wake up.
 
 ---
 

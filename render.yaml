@@ -1,0 +1,25 @@
+# Render Blueprint: one free web service that runs the API + socket.io and serves the Angular app.
+# Render dashboard → New → Blueprint → pick this repo. You'll be asked for MONGO_URI (MongoDB Atlas).
+services:
+  - type: web
+    name: skillswap
+    runtime: node
+    plan: free
+    region: singapore # keep close to the Atlas cluster's region
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: '22'
+      - key: MONGO_URI
+        sync: false # secret: entered in the dashboard, never committed
+      - key: JWT_ACCESS_SECRET
+        generateValue: true # Render generates a random secret
+      - key: COOKIE_SECURE
+        value: 'true'
+      - key: COOKIE_SAMESITE
+        value: lax
