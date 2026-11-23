@@ -290,7 +290,7 @@ export class ProfileEdit implements OnInit {
         next: (user) => {
           this.saving.set(false);
           this.toast.success('Profile saved');
-          if (this.welcome()) this.router.navigate(['/explore']);
+          if (this.welcome()) this.router.navigate(['/matches']);
           else this.router.navigate(['/users', user._id]);
         },
         error: (err) => {

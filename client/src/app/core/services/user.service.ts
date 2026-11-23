@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse, Paged, PageMeta } from '../models/api.model';
-import { ExploreQuery, ProfileUpdate, PublicUser, User } from '../models/user.model';
+import { ExploreQuery, MatchedUser, ProfileUpdate, PublicUser, User } from '../models/user.model';
 import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
@@ -20,6 +20,14 @@ export class UserService {
     }
     return this.http
       .get<ApiResponse<PublicUser[]>>(this.api, { params })
+      .pipe(map((res) => ({ items: res.data, meta: res.meta as PageMeta })));
+  }
+
+  /** People whose skills line up with yours, best match first. */
+  matches(page = 1, limit = 12): Observable<Paged<MatchedUser>> {
+    const params = new HttpParams().set('page', page).set('limit', limit);
+    return this.http
+      .get<ApiResponse<MatchedUser[]>>(`${this.api}/matches`, { params })
       .pipe(map((res) => ({ items: res.data, meta: res.meta as PageMeta })));
   }
 

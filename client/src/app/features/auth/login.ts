@@ -124,6 +124,6 @@ export class Login {
   // Only allow in-app paths, so the param can't redirect users to another site.
   private safeReturnUrl() {
     const url = this.returnUrl();
-    return url && url.startsWith('/') && !url.startsWith('//') ? url : '/explore';
+    return url && url.startsWith('/') && !url.startsWith('//') ? url : '/matches';
   }
 }

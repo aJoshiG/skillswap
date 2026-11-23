@@ -19,8 +19,13 @@ async function explore(req, res) {
   ok(res, items, meta);
 }
 
+async function matches(req, res) {
+  const { items, meta: pageMeta } = await userService.matches(req.userId, req.valid.query);
+  ok(res, items, pageMeta);
+}
+
 function meta(_req, res) {
   ok(res, { categories: SKILL_CATEGORIES, levels: SKILL_LEVELS });
 }
 
-module.exports = { getMe, updateMe, getById, explore, meta };
+module.exports = { getMe, updateMe, getById, explore, matches, meta };

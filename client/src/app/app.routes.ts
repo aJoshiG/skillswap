@@ -26,6 +26,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       {
+        path: 'matches',
+        title: 'Matches · SkillSwap',
+        loadComponent: () => import('./features/matches/matches').then((m) => m.Matches),
+      },
+      {
         path: 'explore',
         title: 'Explore · SkillSwap',
         loadComponent: () => import('./features/explore/explore').then((m) => m.Explore),

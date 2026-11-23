@@ -26,12 +26,12 @@ find each other, send swap requests, and chat in real time once a request is acc
 | --- | --- |
 | **Auth** | Register and log in. Short-lived JWT access token (kept in memory) plus a rotating refresh token in an httpOnly cookie. The client refreshes silently on 401. Reusing a refresh token revokes all of that user's sessions. |
 | **Profiles** | Bio, avatar, location, online/in-person availability, languages, and skills offered and wanted (name, category, level). Public profile pages highlight skills that match yours. |
+| **Smart matching** | A ranked **Matches** page (where you land after logging in). One MongoDB aggregation pipeline finds people who teach what you want or want what you teach, case-insensitively, and puts two-way swaps first. Ranking also weighs how many skills overlap, the teacher's level, and whether you can meet in person in the same city or online. Each card explains *why* you matched and shows any open swap between you. |
 | **Explore** | Full-text search (MongoDB text index) with filters for teach/want, category, level, online/in-person and city, plus pagination and loading skeletons. |
 | **Swap requests** | Request a specific skill and optionally offer one of yours in return. Self-requests and duplicate pending requests are blocked (checked in code and by a partial unique index). Received and sent inboxes with accept, decline and cancel. |
 | **Real-time chat** | Accepting a request opens a private room. Socket connections are JWT-authenticated and only participants can join. Messages persist in MongoDB with cursor pagination. Includes typing indicators, read receipts (✓ / ✓✓), online presence, unread badges and live toasts. |
 
 ### Roadmap
-- **Smart matching:** rank mutual swaps (A teaches what B wants and B teaches what A wants) with an aggregation pipeline
 - **Sessions:** schedule swap sessions and have both people confirm completion
 - **Time credits:** teach 1 hour to earn 1 credit and spend credits to learn, with transfers done in MongoDB transactions
 - **Reviews and reputation**, plus **real-time notifications**
@@ -119,6 +119,7 @@ erDiagram
 - **Socket auth.** The socket.io handshake must carry a valid access token. Each user joins a private `user:<id>` room (for request and inbox events). Joining a `conversation:<id>` room is checked against the database, and typing events are only relayed to rooms the socket was allowed into.
 - **Race-safe state changes.** Accept, decline and cancel use a conditional `findOneAndUpdate({ status: 'pending' })`, so two clicks can't both succeed. Duplicate pending requests are blocked by a **partial unique index**, not just an application-level check.
 - **Optimistic chat.** Sent messages appear immediately and are replaced by the saved copy when the server acknowledges them, de-duplicated against the broadcast echo.
+- **Matching in one aggregation pipeline.** `$match` (candidates) → `$addFields` (overlapping skills in each direction, meeting formats, score) → `$sort` → `$facet` (page + total in one round trip) → `$lookup` (open swaps, only for the page shown). The candidate filter uses case-insensitive **collation-aware indexes** on skill names, so it examines only real matches instead of scanning every user (checked with `explain()`).
 - **Consistent API.** Every response is `{ success, data, meta? }` or `{ success: false, error: { code, message, details? } }`, produced by one central error handler.
 
 ---

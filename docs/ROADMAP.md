@@ -3,7 +3,7 @@
 Goal: a working, deployed MEAN-stack app (MongoDB, Express, Angular, Node) good enough to
 put on a resume and GitHub. Tick items off here as they're finished.
 
-**Next step:** Phase 3, smart matching (rank two-way swaps with an aggregation pipeline).
+**Next step:** Phase 3, sessions and time credits (schedule a session from an accepted swap; both confirm; credits move inside a MongoDB transaction).
 
 ---
 
@@ -47,8 +47,11 @@ put on a resume and GitHub. Tick items off here as they're finished.
       30s grace period for reusing a just-rotated refresh token, with tests.
 
 ## Phase 3: Standout features (pick at least the first two)
-- [ ] **Smart matching.** A "Best matches" page ranking two-way swaps (A teaches what B wants and B teaches
-      what A wants) with a MongoDB aggregation pipeline and a match score.
+- [x] **Smart matching** (2026-11-23). A Matches page (the post-login landing page) ranked by one aggregation
+      pipeline: case-insensitive candidate filter on collation-aware indexes (explain(): examines only
+      real matches), overlap in both directions, score (two-way swap, overlap, teacher level, same city
+      in person / both online), $facet pagination, $lookup of open swaps. 5 tests. Also fixed: older
+      accepted requests between the same pair lost their "Open chat" link (conversation lookup by pair).
 - [ ] **Sessions and time credits.** Schedule a session from an accepted swap, both people confirm it
       happened, and credits move (teach 1 hour = earn 1 credit) inside a **MongoDB transaction**.
 - [ ] **Reviews and reputation.** Rate someone after a completed session, show the average on their profile.

@@ -37,4 +37,6 @@ const explore = z.object({
   ...pageQuery,
 });
 
-module.exports = { updateProfile, explore };
+const matches = z.object({ ...pageQuery });
+
+module.exports = { updateProfile, explore, matches };

@@ -117,6 +117,7 @@ export class Navbar {
 
   protected readonly menuOpen = signal(false);
   protected readonly links = [
+    { path: '/matches', label: 'Matches' },
     { path: '/explore', label: 'Explore' },
     { path: '/requests', label: 'Requests' },
     { path: '/messages', label: 'Messages' },

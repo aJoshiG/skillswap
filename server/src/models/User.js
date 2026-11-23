@@ -51,6 +51,10 @@ userSchema.index(
 );
 userSchema.index({ 'skillsOffered.category': 1, 'skillsOffered.level': 1 });
 userSchema.index({ 'skillsWanted.category': 1 });
+// Smart matching looks skills up by name, case-insensitively; these indexes share that collation.
+const caseInsensitive = { locale: 'en', strength: 2 };
+userSchema.index({ 'skillsOffered.name': 1 }, { collation: caseInsensitive });
+userSchema.index({ 'skillsWanted.name': 1 }, { collation: caseInsensitive });
 
 userSchema.pre('save', async function hashPassword() {
   if (!this.isModified('password')) return;

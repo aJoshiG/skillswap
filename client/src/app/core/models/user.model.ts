@@ -75,3 +75,22 @@ export interface ExploreQuery {
   page?: number;
   limit?: number;
 }
+
+/** Why a user was matched with you (computed by the server's aggregation pipeline). */
+export interface MatchInfo {
+  score: number;
+  /** Both directions line up: they teach what you want AND want what you teach. */
+  mutual: boolean;
+  /** Their skills that you want to learn. */
+  theyTeach: Skill[];
+  /** Their wanted skills that you can teach. */
+  theyWant: Skill[];
+  canMeetOnline: boolean;
+  canMeetInPerson: boolean;
+}
+
+export interface MatchedUser extends PublicUser {
+  match: MatchInfo;
+  /** The latest pending or accepted swap between you, if any. */
+  swap?: { _id: string; status: 'pending' | 'accepted'; from: string };
+}
