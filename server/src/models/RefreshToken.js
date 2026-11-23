@@ -6,6 +6,8 @@ const refreshTokenSchema = new mongoose.Schema(
     tokenHash: { type: String, required: true, unique: true },
     expiresAt: { type: Date, required: true },
     revokedAt: { type: Date, default: null },
+    // Set when this token was rotated (not when it was logged out): the token that replaced it.
+    replacedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'RefreshToken', default: null },
   },
   { timestamps: true },
 );

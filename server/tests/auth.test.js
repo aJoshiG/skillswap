@@ -1,6 +1,17 @@
 const { api, createUser, auth } = require('./helpers');
 
+const RefreshToken = require('../src/models/RefreshToken');
+const { hashToken } = require('../src/utils/tokens');
+
 const refreshCookie = (res) => res.headers['set-cookie'].find((c) => c.startsWith('ss_refresh='));
+const tokenFrom = (cookie) => [].concat(cookie)[0].match(/ss_refresh=([^;]+)/)[1];
+
+/** Pretends the token in `cookie` was rotated `seconds` ago (past the reuse grace period). */
+const ageRotation = (cookie, seconds) =>
+  RefreshToken.updateOne(
+    { tokenHash: hashToken(tokenFrom(cookie)) },
+    { $set: { revokedAt: new Date(Date.now() - seconds * 1000) } },
+  );
 
 describe('Auth', () => {
   it('registers a user, returns an access token and sets an httpOnly refresh cookie', async () => {
@@ -59,13 +70,34 @@ describe('Auth', () => {
     const rotated = refreshCookie(first);
     expect(rotated).not.toBe(cookie[0]);
 
-    // Reusing the original (now revoked) token is treated as theft.
+    // Once the reuse grace period has passed, reusing the original token is treated as theft...
+    await ageRotation(cookie, 60);
     await api().post('/api/auth/refresh').set('Cookie', cookie).expect(401);
     // ...which also kills the newer token.
     await api().post('/api/auth/refresh').set('Cookie', rotated).expect(401);
   });
 
-  it('logout revokes the refresh token', async () => {
+  it('tolerates reuse of a just-rotated token (aborted request, double reload)', async () => {
+    const { cookie } = await createUser();
+    // The browser sent a refresh but never stored the response's new cookie...
+    const lost = await api().post('/api/auth/refresh').set('Cookie', cookie).expect(200);
+    // ...so the next page load presents the old token again, seconds later.
+    const retry = await api().post('/api/auth/refresh').set('Cookie', cookie).expect(200);
+    expect(refreshCookie(retry)).not.toBe(refreshCookie(lost));
+    // Not treated as theft: the new session keeps working.
+    await api().post('/api/auth/refresh').set('Cookie', refreshCookie(retry)).expect(200);
+  });
+
+  it('lets two simultaneous refreshes with the same token both succeed', async () => {
+    const { cookie } = await createUser();
+    const results = await Promise.all([
+      api().post('/api/auth/refresh').set('Cookie', cookie),
+      api().post('/api/auth/refresh').set('Cookie', cookie),
+    ]);
+    expect(results.map((r) => r.status)).toEqual([200, 200]);
+  });
+
+  it('logout revokes the refresh token, with no grace period', async () => {
     const { cookie } = await createUser();
     await api().post('/api/auth/logout').set('Cookie', cookie).expect(200);
     await api().post('/api/auth/refresh').set('Cookie', cookie).expect(401);

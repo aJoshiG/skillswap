@@ -4,10 +4,24 @@ const ApiError = require('../utils/ApiError');
 const env = require('../config/env');
 const { signAccessToken, generateRefreshToken, hashToken } = require('../utils/tokens');
 
-async function issueTokens(userId) {
+// How long a just-rotated refresh token may still be presented. Covers a browser that sent a
+// refresh but never stored the response's new cookie (page reloaded or closed mid-request) and
+// two tabs refreshing at once. Reuse after this window is treated as theft.
+const ROTATION_GRACE_MS = 30 * 1000;
+
+async function createRefreshToken(userId) {
   const refreshToken = generateRefreshToken();
   const expiresAt = new Date(Date.now() + env.jwt.refreshExpiresDays * 24 * 60 * 60 * 1000);
-  await RefreshToken.create({ user: userId, tokenHash: hashToken(refreshToken), expiresAt });
+  const doc = await RefreshToken.create({
+    user: userId,
+    tokenHash: hashToken(refreshToken),
+    expiresAt,
+  });
+  return { doc, refreshToken, expiresAt };
+}
+
+async function issueTokens(userId) {
+  const { refreshToken, expiresAt } = await createRefreshToken(userId);
   return { accessToken: signAccessToken(userId), refreshToken, refreshExpiresAt: expiresAt };
 }
 
@@ -30,10 +44,14 @@ async function login({ email, password }) {
   return { user, ...(await issueTokens(user._id)) };
 }
 
+const withinGrace = (token) =>
+  Boolean(token.replacedBy) && Date.now() - token.revokedAt.getTime() <= ROTATION_GRACE_MS;
+
 /**
- * Rotates the refresh token: the old one is revoked and a new pair is issued.
- * If a token that was already revoked is presented again, it has probably been
- * stolen, so every session for that user is revoked.
+ * Rotates the refresh token: the old one is marked as replaced and a new pair is issued.
+ * Presenting a token again shortly after it was rotated is a duplicate request from the same
+ * browser and gets a fresh session. Presenting a revoked token any other way means it has
+ * probably been stolen, so every session for that user is revoked.
  */
 async function refresh(refreshToken) {
   if (!refreshToken) throw ApiError.unauthorized('No refresh token');
@@ -43,7 +61,11 @@ async function refresh(refreshToken) {
     throw ApiError.unauthorized('Session expired, please log in again');
   }
 
+  const user = await User.findById(stored.user);
+  if (!user) throw ApiError.unauthorized('Account no longer exists');
+
   if (stored.revokedAt) {
+    if (withinGrace(stored)) return { user, ...(await issueTokens(user._id)) };
     await RefreshToken.updateMany(
       { user: stored.user, revokedAt: null },
       { $set: { revokedAt: new Date() } },
@@ -51,17 +73,27 @@ async function refresh(refreshToken) {
     throw ApiError.unauthorized('Session is no longer valid, please log in again');
   }
 
-  // Conditional update so two concurrent refreshes cannot both succeed.
+  // Create the successor first, then mark the old token as replaced in one conditional update,
+  // so a concurrent refresh never sees it revoked without knowing it was a rotation.
+  const next = await createRefreshToken(user._id);
   const claimed = await RefreshToken.findOneAndUpdate(
     { _id: stored._id, revokedAt: null },
-    { $set: { revokedAt: new Date() } },
+    { $set: { revokedAt: new Date(), replacedBy: next.doc._id } },
   );
-  if (!claimed) throw ApiError.unauthorized('Session is no longer valid, please log in again');
+  if (!claimed) {
+    // Another request rotated it a moment ago: drop our successor and take the grace path.
+    await RefreshToken.deleteOne({ _id: next.doc._id });
+    const rotated = await RefreshToken.findById(stored._id);
+    if (rotated && withinGrace(rotated)) return { user, ...(await issueTokens(user._id)) };
+    throw ApiError.unauthorized('Session is no longer valid, please log in again');
+  }
 
-  const user = await User.findById(stored.user);
-  if (!user) throw ApiError.unauthorized('Account no longer exists');
-
-  return { user, ...(await issueTokens(user._id)) };
+  return {
+    user,
+    accessToken: signAccessToken(user._id),
+    refreshToken: next.refreshToken,
+    refreshExpiresAt: next.expiresAt,
+  };
 }
 
 async function logout(refreshToken) {
