@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "seed": "node scripts/seed.js",
-    "seed:atlas": "node --env-file=.env.atlas scripts/seed.js"
+    "seed:atlas": "node --env-file=.env.atlas scripts/seed.js",
+    "db": "node scripts/dev-db.js"
   },
   "description": "SkillSwap REST API and realtime server",
   "dependencies": {
