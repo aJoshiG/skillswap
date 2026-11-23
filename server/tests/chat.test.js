@@ -35,7 +35,10 @@ describe('Chat', () => {
       lastMessage: { text: 'When are you free?' },
     });
 
-    await api().post(`/api/conversations/${conversationId}/read`).set(auth(teacher.token)).expect(200);
+    await api()
+      .post(`/api/conversations/${conversationId}/read`)
+      .set(auth(teacher.token))
+      .expect(200);
     const after = await api().get('/api/conversations').set(auth(teacher.token));
     expect(after.body.data[0].unreadCount).toBe(0);
   });
@@ -54,7 +57,9 @@ describe('Chat', () => {
     expect(first.body.meta.hasMore).toBe(true);
 
     const older = await api()
-      .get(`/api/conversations/${conversationId}/messages?limit=3&before=${first.body.meta.nextCursor}`)
+      .get(
+        `/api/conversations/${conversationId}/messages?limit=3&before=${first.body.meta.nextCursor}`,
+      )
       .set(auth(learner.token))
       .expect(200);
     expect(older.body.data.map((m) => m.text)).toEqual(['msg 1', 'msg 2']);
@@ -63,7 +68,10 @@ describe('Chat', () => {
 
   it('keeps outsiders out of conversations', async () => {
     const { outsider, conversationId } = await openConversation();
-    await api().get(`/api/conversations/${conversationId}/messages`).set(auth(outsider.token)).expect(403);
+    await api()
+      .get(`/api/conversations/${conversationId}/messages`)
+      .set(auth(outsider.token))
+      .expect(403);
     await sendMsg(outsider, conversationId, 'let me in').expect(403);
     await sendMsg(outsider, conversationId, '   ').expect(400);
   });

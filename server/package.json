@@ -6,8 +6,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest --runInBand",
-    "lint": "eslint .",
-    "format": "prettier --write .",
+    "lint": "eslint . && prettier --check \"src/**/*.js\" \"tests/**/*.js\" \"scripts/**/*.js\"",
+    "format": "prettier --write \"src/**/*.js\" \"tests/**/*.js\" \"scripts/**/*.js\"",
     "seed": "node scripts/seed.js",
     "seed:atlas": "node --env-file=.env.atlas scripts/seed.js",
     "db": "node scripts/dev-db.js"

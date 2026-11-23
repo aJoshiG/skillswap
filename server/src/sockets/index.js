@@ -62,7 +62,8 @@ function initSockets(httpServer) {
       'message:send',
       withAck(async ({ conversationId, text }) => {
         const clean = typeof text === 'string' ? text.trim() : '';
-        if (!clean || clean.length > 2000) throw Object.assign(new Error('Invalid message'), { status: 400 });
+        if (!clean || clean.length > 2000)
+          throw Object.assign(new Error('Invalid message'), { status: 400 });
         return chatService.sendMessage(userId, conversationId, clean);
       }),
     );
@@ -82,7 +83,9 @@ function initSockets(httpServer) {
     socket.on('disconnect', async () => {
       if (presence.remove(userId)) {
         io.emit('presence:update', { userId, online: false });
-        await User.updateOne({ _id: userId }, { $set: { lastActiveAt: new Date() } }).catch(() => {});
+        await User.updateOne({ _id: userId }, { $set: { lastActiveAt: new Date() } }).catch(
+          () => {},
+        );
       }
     });
   });

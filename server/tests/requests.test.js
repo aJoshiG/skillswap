@@ -42,7 +42,10 @@ describe('Swap requests', () => {
     const { teacher, learner, skillId } = await setup();
 
     await send(teacher, { to: teacher.user._id, skillId }).expect(400);
-    await send(learner, { to: teacher.user._id, skillId: learner.user.skillsOffered[0]._id }).expect(400);
+    await send(learner, {
+      to: teacher.user._id,
+      skillId: learner.user.skillsOffered[0]._id,
+    }).expect(400);
     await send(learner, { to: teacher.user._id, skillId, offeredSkillId: skillId }).expect(400);
 
     await send(learner, { to: teacher.user._id, skillId }).expect(201);
@@ -74,7 +77,10 @@ describe('Swap requests', () => {
     const { teacher, learner, skillId } = await setup();
     const accept = async (from, to, skill) => {
       const { body } = await send(from, { to: to.user._id, skillId: skill }).expect(201);
-      const res = await api().patch(`/api/requests/${body.data._id}/accept`).set(auth(to.token)).expect(200);
+      const res = await api()
+        .patch(`/api/requests/${body.data._id}/accept`)
+        .set(auth(to.token))
+        .expect(200);
       return res.body.data;
     };
 
@@ -91,16 +97,27 @@ describe('Swap requests', () => {
     // Both accepted requests (old and new) still link to that one chat in the inboxes.
     const sent = await api().get('/api/requests?box=sent').set(auth(learner.token)).expect(200);
     const received = await api().get('/api/requests?box=received').set(auth(learner.token));
-    const accepted = [...sent.body.data, ...received.body.data].filter((r) => r.status === 'accepted');
+    const accepted = [...sent.body.data, ...received.body.data].filter(
+      (r) => r.status === 'accepted',
+    );
     expect(accepted).toHaveLength(2);
-    expect(accepted.map((r) => r.conversationId)).toEqual([first.conversationId, first.conversationId]);
+    expect(accepted.map((r) => r.conversationId)).toEqual([
+      first.conversationId,
+      first.conversationId,
+    ]);
   });
 
   it('only the sender can cancel, and declined requests do not open chats', async () => {
     const { teacher, learner, skillId } = await setup();
     const first = await send(learner, { to: teacher.user._id, skillId });
-    await api().patch(`/api/requests/${first.body.data._id}/cancel`).set(auth(teacher.token)).expect(403);
-    await api().patch(`/api/requests/${first.body.data._id}/cancel`).set(auth(learner.token)).expect(200);
+    await api()
+      .patch(`/api/requests/${first.body.data._id}/cancel`)
+      .set(auth(teacher.token))
+      .expect(403);
+    await api()
+      .patch(`/api/requests/${first.body.data._id}/cancel`)
+      .set(auth(learner.token))
+      .expect(200);
 
     const second = await send(learner, { to: teacher.user._id, skillId });
     const declined = await api()
@@ -109,7 +126,9 @@ describe('Swap requests', () => {
       .expect(200);
     expect(declined.body.data.conversationId).toBeNull();
 
-    const filtered = await api().get('/api/requests?box=sent&status=cancelled').set(auth(learner.token));
+    const filtered = await api()
+      .get('/api/requests?box=sent&status=cancelled')
+      .set(auth(learner.token));
     expect(filtered.body.data).toHaveLength(1);
   });
 });

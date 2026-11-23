@@ -41,7 +41,8 @@ function createApp() {
     app.use(express.static(env.clientDist, { index: false, maxAge: '1y', immutable: true }));
     // SPA fallback: deep links like /explore or /messages/123 load index.html and Angular routes them.
     app.use((req, res, next) => {
-      if (req.method !== 'GET' || req.path.startsWith('/api') || !req.accepts('html')) return next();
+      if (req.method !== 'GET' || req.path.startsWith('/api') || !req.accepts('html'))
+        return next();
       res.set('Cache-Control', 'no-cache');
       res.sendFile('index.html', { root: env.clientDist });
     });

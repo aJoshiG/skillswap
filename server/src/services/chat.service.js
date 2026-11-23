@@ -8,7 +8,8 @@ const PARTICIPANT_FIELDS = 'name avatarUrl lastActiveAt';
 
 /** Loads a conversation and checks the user is one of its two participants. */
 async function getConversationFor(userId, conversationId) {
-  if (!mongoose.isValidObjectId(conversationId)) throw ApiError.badRequest('Invalid conversation id');
+  if (!mongoose.isValidObjectId(conversationId))
+    throw ApiError.badRequest('Invalid conversation id');
   const conversation = await Conversation.findById(conversationId);
   if (!conversation) throw ApiError.notFound('Conversation not found');
   if (!conversation.participants.some((p) => String(p) === String(userId))) {
