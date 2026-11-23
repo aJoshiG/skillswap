@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PageMeta, errorMessage } from '../../core/models/api.model';
 import { Review } from '../../core/models/review.model';
 import { PublicProfile, Skill, averageRating } from '../../core/models/user.model';
@@ -213,6 +213,7 @@ const sameSkill = (a: Pick<Skill, 'name'>, b: Pick<Skill, 'name'>) =>
 export class ProfileView {
   private readonly users = inject(UserService);
   private readonly auth = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
   protected readonly socket = inject(SocketService);
 
   /** Route param :id (bound via withComponentInputBinding). */
@@ -230,6 +231,12 @@ export class ProfileView {
       next: (res) => {
         this.reviews.update((list) => (page === 1 ? res.items : [...list, ...res.items]));
         this.reviewsMeta.set(res.meta);
+        // Links like /users/:id#reviews (from a review notification): scroll once the list exists.
+        if (page === 1 && this.route.snapshot.fragment === 'reviews') {
+          setTimeout(() =>
+            document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' }),
+          );
+        }
         this.loadingReviews.set(false);
       },
       error: () => this.loadingReviews.set(false),

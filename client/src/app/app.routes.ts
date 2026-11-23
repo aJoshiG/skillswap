@@ -56,6 +56,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/sessions/sessions').then((m) => m.Sessions),
       },
       {
+        path: 'notifications',
+        title: 'Notifications · SkillSwap',
+        loadComponent: () =>
+          import('./features/notifications/notifications').then((m) => m.Notifications),
+      },
+      {
         path: 'messages',
         title: 'Messages · SkillSwap',
         loadComponent: () => import('./features/chat/messages').then((m) => m.Messages),

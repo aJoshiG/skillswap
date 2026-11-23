@@ -3,7 +3,7 @@
 Goal: a working, deployed MEAN-stack app (MongoDB, Express, Angular, Node) good enough to
 put on a resume and GitHub. Tick items off here as they're finished.
 
-**Next step:** optional extras: notifications center, then avatar upload. Prepare interview notes.
+**Next step:** optional: avatar upload; interview notes.
 
 ---
 
@@ -74,7 +74,12 @@ put on a resume and GitHub. Tick items off here as they're finished.
       confirmation → auto-complete and pay 72h after the end; none → expire and refund after 7 days; past
       proposals → expired. Conditional + transactional, so concurrent or repeated runs never double-pay
       (tested). The UI shows each deadline. 6 server tests + client unit tests.
-- [ ] Notifications center (persisted, unread badge, live)
+- [x] **Notifications centre** (2026-11-24). Bell with a live unread badge, dropdown (latest 10, links,
+      mark all read), a full page with an Unread filter. Requests, every session step (including sweeper
+      outcomes) and reviews. Partial index for unread counts, TTL 90 days, failures never break the
+      action. 5 server tests, client unit tests, an e2e test (live badge, a11y of the dropdown, focus).
+      Found and fixed along the way: typing before a chat room finished joining was silently dropped;
+      leaked browser windows in e2e tests; the per-IP API limit tripping in e2e (now configurable).
 - [ ] Avatar upload (Cloudinary)
 
 ## ✅ Phase 4: Polish (done, 2026-11-23)

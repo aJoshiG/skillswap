@@ -3,6 +3,7 @@ const Session = require('../models/Session');
 const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const emitter = require('../sockets/emitter');
+const notifications = require('./notification.service');
 const { runInTransaction } = require('../utils/transaction');
 const { pageMeta } = require('../utils/pagination');
 
@@ -55,6 +56,11 @@ async function create(userId, sessionId, { rating, comment }) {
 
   const populated = await Review.findById(review._id).populate('reviewer', 'name avatarUrl');
   emitter.toUser(reviewee, 'review:new', populated);
+  await notifications.notify(reviewee, 'review:new', {
+    actor: userId,
+    data: { rating, skill: session.skill.name },
+    link: `/users/${reviewee}#reviews`,
+  });
   return populated;
 }
 

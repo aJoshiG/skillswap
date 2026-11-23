@@ -42,6 +42,7 @@ test('app pages', async ({ page }) => {
     ['/requests', 'Requests', 'article'],
     ['/messages', 'Messages', 'a[href*="/messages/"]'],
     ['/sessions', 'Sessions', 'li.card'],
+    ['/notifications', 'Notifications', 'main li'],
     ['/profile/edit', 'Edit profile', 'form'],
   ]) {
     await page.goto(path);

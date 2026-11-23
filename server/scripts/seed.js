@@ -11,6 +11,7 @@ const Message = require('../src/models/Message');
 const Session = require('../src/models/Session');
 const CreditTransaction = require('../src/models/CreditTransaction');
 const Review = require('../src/models/Review');
+const Notification = require('../src/models/Notification');
 const { WELCOME_CREDITS } = require('../src/config/constants');
 
 const PASSWORD = 'password123';
@@ -266,6 +267,7 @@ async function seed() {
     Session.deleteMany({}),
     CreditTransaction.deleteMany({}),
     Review.deleteMany({}),
+    Notification.deleteMany({}),
   ]);
   // syncIndexes (not just init) also drops indexes the schemas no longer define,
   // e.g. the old unique index on Conversation.request.
@@ -278,6 +280,7 @@ async function seed() {
     Session,
     CreditTransaction,
     Review,
+    Notification,
   ]) {
     await model.syncIndexes();
   }
@@ -555,6 +558,71 @@ async function seedSessionsAndCredits({ created, demo, riya, accepted, now }) {
 
   await CreditTransaction.collection.insertMany(entries);
   await Review.collection.insertMany(reviews);
+
+  // The demo account's notification history: two unread (Carlos's request, Riya's proposal) and
+  // some older, already-read ones that match the story above.
+  const carlos = byName.get('Carlos');
+  const note = (user, type, actor, data, link, at, read = true) => ({
+    user: user._id,
+    type,
+    actor: actor?._id ?? null,
+    data,
+    link,
+    readAt: read ? new Date(at + 3600e3) : null,
+    createdAt: new Date(at),
+  });
+  await Notification.collection.insertMany([
+    note(demo, 'request:new', carlos, { skill: 'Angular' }, '/requests', now - 2 * 3600e3, false),
+    note(
+      demo,
+      'session:proposed',
+      riya,
+      { skill: 'Guitar', credits: 1 },
+      '/sessions',
+      now - 20 * 3600e3,
+      false,
+    ),
+    note(
+      demo,
+      'review:new',
+      riya,
+      { rating: 5, skill: 'JavaScript' },
+      `/users/${demo._id}#reviews`,
+      now - 3 * day + 2 * 3600e3,
+    ),
+    note(
+      demo,
+      'session:completed',
+      riya,
+      { skill: 'JavaScript', credits: 1.5 },
+      '/sessions',
+      now - 3 * day + 5400e3,
+    ),
+    note(
+      demo,
+      'review:new',
+      riya,
+      { rating: 5, skill: 'Guitar' },
+      `/users/${demo._id}#reviews`,
+      now - 5 * day + 3 * 3600e3,
+    ),
+    note(
+      riya,
+      'session:accepted',
+      demo,
+      { skill: 'JavaScript', credits: 1 },
+      '/sessions',
+      now - day,
+    ),
+    note(
+      riya,
+      'review:new',
+      demo,
+      { rating: 5, skill: 'Guitar' },
+      `/users/${riya._id}#reviews`,
+      now - 5 * day + 2 * 3600e3,
+    ),
+  ]);
   // Reputation stats derived from the reviews above, like the app's $inc on each review.
   const stats = new Map();
   for (const r of reviews) {

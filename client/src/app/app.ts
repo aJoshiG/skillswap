@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { ChatService } from './core/services/chat.service';
 import { RequestService } from './core/services/request.service';
+import { NotificationService } from './core/services/notification.service';
 import { SessionService } from './core/services/session.service';
 import { Navbar } from './shared/components/navbar';
 import { ToastContainer } from './shared/components/toast-container';
@@ -27,6 +28,7 @@ export class App {
   private readonly chat = inject(ChatService);
   private readonly requests = inject(RequestService);
   private readonly sessions = inject(SessionService);
+  private readonly notifications = inject(NotificationService);
 
   constructor() {
     // Load the navbar badge counts whenever someone logs in.
@@ -36,6 +38,7 @@ export class App {
         this.requests.refreshPendingCount();
         this.chat.loadConversations();
         this.sessions.refresh();
+        this.notifications.refreshCount();
       });
     });
   }

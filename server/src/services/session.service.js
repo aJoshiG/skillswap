@@ -3,6 +3,7 @@ const SwapRequest = require('../models/SwapRequest');
 const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const emitter = require('../sockets/emitter');
+const notifications = require('./notification.service');
 const credits = require('./credit.service');
 const reviews = require('./review.service');
 const { runInTransaction } = require('../utils/transaction');
@@ -25,6 +26,11 @@ async function notify(sessionId, actorId, action) {
   const actor = await User.findById(actorId, { name: 1 }).lean();
   const other = otherParticipant(session, actorId);
   emitter.toUser(other._id ?? other, 'session:updated', { session, action, by: actor?.name ?? '' });
+  await notifications.notify(other._id ?? other, `session:${action}`, {
+    actor: actorId,
+    data: { skill: session.skill.name, credits: session.credits },
+    link: '/sessions',
+  });
   return session;
 }
 
@@ -240,6 +246,10 @@ async function notifyBoth(sessionId, action) {
   const session = await populate(Session.findById(sessionId));
   for (const user of [session.teacher, session.learner]) {
     emitter.toUser(user._id ?? user, 'session:updated', { session, action, by: 'SkillSwap' });
+    await notifications.notify(user._id ?? user, `session:${action}`, {
+      data: { skill: session.skill.name, credits: session.credits },
+      link: '/sessions',
+    });
   }
 }
 

@@ -4,6 +4,7 @@ const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const { pageMeta } = require('../utils/pagination');
 const emitter = require('../sockets/emitter');
+const notifications = require('./notification.service');
 
 const USER_PREVIEW = 'name avatarUrl location availability';
 
@@ -59,6 +60,11 @@ async function create(fromId, { to, skillId, offeredSkillId, message }) {
 
   const populated = await populateRequest(SwapRequest.findById(request._id));
   emitter.toUser(to, 'request:new', populated);
+  await notifications.notify(to, 'request:new', {
+    actor: fromId,
+    data: { skill: populated.skill.name },
+    link: '/requests',
+  });
   return populated;
 }
 
@@ -82,7 +88,9 @@ async function list(userId, { box, status, page, limit }) {
   const pairOf = (r) => Conversation.pairKeyFor(r.from._id ?? r.from, r.to._id ?? r.to);
   const pairKeys = [...new Set(items.filter((r) => r.status === 'accepted').map(pairOf))];
   const conversations = pairKeys.length
-    ? await Conversation.find({ pairKey: { $in: pairKeys } }).select('_id pairKey').lean()
+    ? await Conversation.find({ pairKey: { $in: pairKeys } })
+        .select('_id pairKey')
+        .lean()
     : [];
   const conversationByPair = new Map(conversations.map((c) => [c.pairKey, c._id]));
 
@@ -106,7 +114,9 @@ async function respond(userId, requestId, action) {
   const existing = await SwapRequest.findById(requestId);
   if (!existing) throw ApiError.notFound('Request not found');
   if (String(existing[actor]) !== String(userId)) {
-    throw ApiError.forbidden(`Only the ${actor === 'to' ? 'recipient' : 'sender'} can ${action} this request`);
+    throw ApiError.forbidden(
+      `Only the ${actor === 'to' ? 'recipient' : 'sender'} can ${action} this request`,
+    );
   }
 
   // Only pending requests can change; the status condition makes this race-safe.
@@ -135,6 +145,13 @@ async function respond(userId, requestId, action) {
   const payload = { request: populated, conversationId: conversation?._id ?? null };
   const otherUser = actor === 'to' ? updated.from : updated.to;
   emitter.toUser(otherUser, 'request:updated', payload);
+  if (status === 'accepted' || status === 'declined') {
+    await notifications.notify(updated.from, `request:${status}`, {
+      actor: userId,
+      data: { skill: updated.skill.name },
+      link: conversation ? `/messages/${conversation._id}` : '/requests',
+    });
+  }
   return payload;
 }
 

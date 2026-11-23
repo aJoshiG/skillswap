@@ -39,9 +39,9 @@ find each other, send swap requests, and chat in real time once a request is acc
 | **Real-time chat** | Accepting a request opens a private room. Socket connections are JWT-authenticated and only participants can join. Messages persist in MongoDB with cursor pagination. Includes typing indicators, read receipts (✓ / ✓✓), online presence, unread badges and live toasts. |
 | **Sessions & time credits** | Schedule lessons from an accepted swap (in chat or on the Requests page): who teaches what, when, how long, online or in person. 1 hour of teaching = 1 credit, and new users start with 2. Accepting a session **holds** the learner's credits (escrow). Cancelling before it starts **refunds** them. Once both people confirm it happened, the teacher is **paid**. Forgotten sessions resolve themselves: with one confirmation they **auto-complete** 3 days after the end, with none they **expire** after 7 days and the learner is refunded, and the page shows each deadline. Every step runs in a **MongoDB transaction** and is written to an append-only ledger. Live updates over the socket, plus a navbar balance and an action badge. |
 | **Reviews & reputation** | After a completed session, both people can rate each other (1–5 stars, optional comment), once per session. Profiles show the average rating, sessions and hours taught, and the reviews. Explore and Matches cards show ratings, and **Matches ranks better-rated teachers higher** using a Bayesian average. Reviewees get a live notification. The star picker is accessible: real radio buttons, keyboard and screen readers. |
+| **Notifications** | A 🔔 bell with an unread badge, updated live. It covers new and answered requests, every session step (including automatic completions and expiries) and new reviews. The dropdown shows the latest 10, each linking to where it happened, and there's a full Notifications page with an Unread filter and "mark all as read". Stored in MongoDB with a partial index for unread counts and a TTL index that removes them after 90 days. |
 
 ### Roadmap
-- **Real-time notifications** center (beyond the current live toasts)
 - Auto-resolve sessions nobody confirms (e.g. refund after 7 days)
 
 ---
@@ -97,6 +97,7 @@ erDiagram
   SESSION ||--o{ CREDIT_TRANSACTION : "hold / refund / pay"
   SESSION ||--o{ REVIEW : "rated after completion"
   USER ||--o{ REVIEW : "gives / receives"
+  USER ||--o{ NOTIFICATION : "receives"
   USER {
     string name
     string email
@@ -138,6 +139,7 @@ erDiagram
 - **Matching in one aggregation pipeline.** `$match` (candidates) → `$addFields` (overlapping skills in each direction, meeting formats, score) → `$sort` → `$facet` (page + total in one round trip) → `$lookup` (open swaps, only for the page shown). The candidate filter uses case-insensitive **collation-aware indexes** on skill names, so it examines only real matches instead of scanning every user (checked with `explain()`).
 - **Credits are money-like, so every move is a transaction.** Holding, refunding and paying each update the balance (`User.credits`), the ledger (`CreditTransaction`) and the session status inside one MongoDB transaction: all or nothing. Spending is a conditional update ("only if the balance is at least this much"), so balances never go negative. Status changes are conditional too (`scheduled → completed` happens once), so the teacher is paid exactly once. Tests fire simultaneous accepts and confirms; MongoDB detects the write conflicts and retries, and the results stay correct. The ledger always adds up to the balance, and the tests check that.
 - **A background job that's safe to run anywhere, any number of times.** The session sweeper runs at startup and every 15 minutes. Each resolution is a conditional update ("only if it's still scheduled with exactly this many confirmations") inside the same transaction as its credit movement. Two sweepers at once, a rerun, or a user clicking Confirm at the same moment can't pay or refund twice, and tests cover each case. On hosts that sleep when idle, the startup run catches up.
+- **Notifications never break the action that caused them.** They're created after the action succeeds, and any failure is logged and swallowed, so an accept or a payment can't fail because of a notification (a test simulates notifications being down). A partial index holds only unread notifications, which keeps the unread count cheap. A TTL index deletes them after 90 days. People are never notified about their own actions.
 - **Reputation without race conditions or rating spam.** A review and the reviewee's stats (`$inc` on count and sum) are written in one transaction, so concurrent reviews can't lose updates. A unique index on (session, reviewer) rejects a second review, even one submitted at the same moment. Matching uses a **Bayesian average**: `(sum + 4×3) / (count + 3)` pulls ratings with few reviews toward a neutral prior, so one lucky 5★ doesn't outrank a teacher with twenty 4.8s, and new users aren't penalised. Teaching stats (sessions and hours) are computed from completed sessions, the source of truth, rather than stored counters.
 - **Consistent API.** Every response is `{ success, data, meta? }` or `{ success: false, error: { code, message, details? } }`, produced by one central error handler.
 
@@ -172,11 +174,14 @@ All routes are under `/api`. 🔒 = requires `Authorization: Bearer <accessToken
 | POST 🔒 | `/sessions/:id/review` | Review the other person on a completed session `{ rating: 1–5, comment? }` |
 | GET 🔒 | `/users/:id/reviews` | Reviews a user received, `page, limit` |
 | PATCH 🔒 | `/sessions/:id/:action` | `accept` (holds credits) · `decline` · `cancel` (refunds) · `confirm` (pays when both have) |
+| GET 🔒 | `/notifications` | My notifications, newest first: `unread=true, page, limit` |
+| GET 🔒 | `/notifications/unread-count` | `{ count }` for the bell |
+| PATCH 🔒 | `/notifications/:id/read` · `/notifications/read-all` | Mark one or all as read |
 | GET 🔒 | `/credits` | Balance, held credits and the ledger, `page, limit` |
 
 **Socket events:** `conversation:join`, `conversation:leave`, `message:send`, `message:read`,
 `typing`, `presence:query` (client → server); `message:new`, `message:read`, `typing`,
-`conversation:updated`, `request:new`, `request:updated`, `session:updated`, `review:new`, `presence:update` (server → client).
+`conversation:updated`, `request:new`, `request:updated`, `session:updated`, `review:new`, `notification:new`, `presence:update` (server → client).
 
 ---
 
@@ -229,6 +234,7 @@ The **end-to-end suite** starts everything from scratch: an in-memory MongoDB re
 | `PORT` | `4000` | |
 | `MONGO_URI` | `mongodb://127.0.0.1:27018/skillswap?replicaSet=rs0` | Must be a replica set for sessions/credits (`npm run db`, Atlas, or Docker Compose) |
 | `CLIENT_URL` | `http://localhost:4200` | CORS origin and socket.io origin (on Render, defaults to the service URL) |
+| `API_RATE_LIMIT_PER_MINUTE` | `300` | General API requests per IP per minute |
 | `SESSION_SWEEP_MINUTES` | `15` | How often overdue sessions are auto-resolved; `0` turns it off |
 | `CLIENT_DIST` | `client/dist/client/browser` | Built Angular app to serve; defaults to that path when `NODE_ENV=production` |
 | `JWT_ACCESS_SECRET` | long random string | `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |

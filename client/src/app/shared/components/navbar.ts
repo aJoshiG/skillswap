@@ -5,10 +5,11 @@ import { ChatService } from '../../core/services/chat.service';
 import { RequestService } from '../../core/services/request.service';
 import { SessionService } from '../../core/services/session.service';
 import { Avatar } from './avatar';
+import { NotificationBell } from './notification-bell';
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, RouterLinkActive, Avatar],
+  imports: [RouterLink, RouterLinkActive, Avatar, NotificationBell],
   template: `
     <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
       <nav class="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
@@ -39,6 +40,7 @@ import { Avatar } from './avatar';
           </div>
 
           <div class="relative ml-auto flex items-center gap-2">
+            <app-notification-bell />
             @if (sessions.balance() !== null) {
               <a
                 routerLink="/sessions"
