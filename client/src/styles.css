@@ -1,0 +1,84 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: oklch(0.97 0.02 275);
+  --color-brand-100: oklch(0.94 0.04 275);
+  --color-brand-200: oklch(0.88 0.07 275);
+  --color-brand-300: oklch(0.79 0.11 275);
+  --color-brand-400: oklch(0.68 0.16 275);
+  --color-brand-500: oklch(0.59 0.2 275);
+  --color-brand-600: oklch(0.52 0.22 275);
+  --color-brand-700: oklch(0.45 0.2 275);
+  --color-brand-800: oklch(0.38 0.16 275);
+  --color-brand-900: oklch(0.32 0.12 275);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-slate-50 text-slate-800;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    @apply text-slate-900;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+}
+
+/* Reusable component classes. Tailwind v4 can't @apply another custom class, so each
+   button variant repeats the base styles from --btn. */
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60;
+}
+@utility btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60;
+  @apply bg-brand-600 text-white shadow-sm hover:bg-brand-700;
+}
+@utility btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60;
+  @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+}
+@utility btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60;
+  @apply text-slate-600 hover:bg-slate-100 hover:text-slate-900;
+}
+@utility btn-danger {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60;
+  @apply border border-red-200 bg-white text-red-600 hover:bg-red-50;
+}
+@utility btn-sm {
+  @apply px-3 py-1.5 text-xs;
+}
+
+@utility label {
+  @apply mb-1 block text-sm font-medium text-slate-700;
+}
+@utility input {
+  @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 focus:outline-none;
+}
+@utility field-error {
+  @apply mt-1 text-xs text-red-600;
+}
+@utility card {
+  @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+}
+@utility page {
+  @apply mx-auto w-full max-w-6xl px-4 py-8 sm:px-6;
+}
+@utility skeleton {
+  @apply animate-pulse rounded-md bg-slate-200;
+}
+
+/* Highlight invalid fields once the user has interacted with them. */
+.input.ng-invalid.ng-touched {
+  @apply border-red-400 focus:ring-red-100;
+}
