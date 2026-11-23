@@ -1,5 +1,6 @@
 const sessionService = require('../services/session.service');
 const creditService = require('../services/credit.service');
+const reviewService = require('../services/review.service');
 const { ok, created } = require('../utils/response');
 
 async function create(req, res) {
@@ -21,4 +22,13 @@ async function credits(req, res) {
   ok(res, data, meta);
 }
 
-module.exports = { create, list, respond, credits };
+async function review(req, res) {
+  created(res, await reviewService.create(req.userId, req.valid.params.id, req.valid.body));
+}
+
+async function userReviews(req, res) {
+  const { items, meta } = await reviewService.listForUser(req.valid.params.id, req.valid.query);
+  ok(res, items, meta);
+}
+
+module.exports = { create, list, respond, credits, review, userReviews };

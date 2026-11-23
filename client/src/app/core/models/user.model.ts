@@ -34,8 +34,25 @@ export interface PublicUser {
   languages: string[];
   skillsOffered: Skill[];
   skillsWanted: Skill[];
+  /** Reputation: average = sum / count. */
+  reviewStats: ReviewStats;
   lastActiveAt: string;
   createdAt: string;
+}
+
+export interface ReviewStats {
+  count: number;
+  sum: number;
+}
+
+/** Average rating, or null when there are no reviews yet. */
+export function averageRating(stats: ReviewStats | undefined): number | null {
+  return stats && stats.count > 0 ? stats.sum / stats.count : null;
+}
+
+/** A public profile page also includes the teaching record (from completed sessions). */
+export interface PublicProfile extends PublicUser {
+  teaching: { sessions: number; hours: number };
 }
 
 export interface User extends PublicUser {

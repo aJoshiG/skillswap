@@ -9,6 +9,7 @@ import {
   ExploreQuery,
   PublicUser,
   SKILL_CATEGORIES,
+  averageRating,
   SKILL_LEVELS,
 } from '../../core/models/user.model';
 import { UserService } from '../../core/services/user.service';
@@ -17,10 +18,11 @@ import { ToastService } from '../../core/services/toast.service';
 import { Avatar } from '../../shared/components/avatar';
 import { EmptyState } from '../../shared/components/empty-state';
 import { SkillChip } from '../../shared/components/skill-chip';
+import { Stars } from '../../shared/components/stars';
 
 @Component({
   selector: 'app-explore',
-  imports: [ReactiveFormsModule, RouterLink, TitleCasePipe, Avatar, SkillChip, EmptyState],
+  imports: [ReactiveFormsModule, RouterLink, TitleCasePipe, Avatar, SkillChip, EmptyState, Stars],
   template: `
     <div class="page">
       <header class="mb-6">
@@ -152,6 +154,9 @@ import { SkillChip } from '../../shared/components/skill-chip';
                     {{ user.location.city || 'Anywhere' }} ·
                     {{ availabilityLabel(user.availability) }}
                   </p>
+                  @if (rating(user); as r) {
+                    <app-stars [value]="r" [count]="user.reviewStats.count" />
+                  }
                 </div>
               </div>
               @if (user.bio) {
@@ -200,6 +205,9 @@ import { SkillChip } from '../../shared/components/skill-chip';
   `,
 })
 export class Explore {
+  /** Average rating for a card, or null when there are no reviews yet. */
+  protected readonly rating = (u: PublicUser) => averageRating(u.reviewStats);
+
   private readonly userService = inject(UserService);
   private readonly toast = inject(ToastService);
   protected readonly socket = inject(SocketService);

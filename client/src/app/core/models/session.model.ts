@@ -30,6 +30,8 @@ export interface Session {
   completedAt: string | null;
   cancelledBy: string | null;
   createdAt: string;
+  /** On completed sessions: my review of the other person, or null if I haven't reviewed yet. */
+  myReview?: { rating: number; comment: string } | null;
 }
 
 export interface ProposeSession {

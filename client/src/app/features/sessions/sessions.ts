@@ -15,11 +15,13 @@ import { SessionService } from '../../core/services/session.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Avatar } from '../../shared/components/avatar';
 import { EmptyState } from '../../shared/components/empty-state';
+import { Stars } from '../../shared/components/stars';
 import { TimeAgoPipe } from '../../shared/pipes/time-ago.pipe';
+import { ReviewModal } from './review-modal';
 
 @Component({
   selector: 'app-sessions',
-  imports: [DatePipe, RouterLink, Avatar, EmptyState, TimeAgoPipe],
+  imports: [DatePipe, RouterLink, Avatar, EmptyState, TimeAgoPipe, Stars, ReviewModal],
   template: `
     <div class="page">
       <header class="mb-6">
@@ -185,6 +187,17 @@ import { TimeAgoPipe } from '../../shared/pipes/time-ago.pipe';
                             </span>
                           }
                         }
+                        @if (s.status === 'completed') {
+                          @if (s.myReview; as r) {
+                            <span class="flex items-center gap-1.5 text-sm text-slate-500">
+                              You rated <app-stars [value]="r.rating" [showValue]="false" />
+                            </span>
+                          } @else {
+                            <button class="btn-secondary btn-sm" (click)="reviewing.set(s)">
+                              ★ Review {{ firstName(other(s).name) }}
+                            </button>
+                          }
+                        }
                       </div>
                     </div>
                   </div>
@@ -246,9 +259,19 @@ import { TimeAgoPipe } from '../../shared/pipes/time-ago.pipe';
         </aside>
       </div>
     </div>
+
+    @if (reviewing(); as s) {
+      <app-review-modal
+        [session]="s"
+        (closed)="reviewing.set(null)"
+        (reviewed)="reviewing.set(null); load(scope())"
+      />
+    }
   `,
 })
 export class Sessions {
+  /** The completed session being reviewed, while the review dialog is open. */
+  protected readonly reviewing = signal<Session | null>(null);
   protected readonly sessionsApi = inject(SessionService);
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
@@ -273,7 +296,7 @@ export class Sessions {
     });
   }
 
-  private load(scope: SessionScope) {
+  protected load(scope: SessionScope) {
     this.loading.set(true);
     this.sessionsApi.list(scope).subscribe({
       next: (res) => {

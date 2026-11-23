@@ -31,6 +31,12 @@ const userSchema = new mongoose.Schema(
     // Spendable time credits (private). Every change goes through a transaction that also writes
     // a CreditTransaction, so the ledger always adds up to this balance.
     credits: { type: Number, default: WELCOME_CREDITS, min: 0 },
+    // Reputation: updated with $inc in the same transaction as each new review, so concurrent
+    // reviews can't lose updates. Average = sum / count (computed by readers).
+    reviewStats: {
+      count: { type: Number, default: 0 },
+      sum: { type: Number, default: 0 },
+    },
   },
   {
     timestamps: true,

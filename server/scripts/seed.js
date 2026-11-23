@@ -1,5 +1,5 @@
 /* Seeds the database with demo users whose skills overlap, so Explore and Matching have data.
- * Usage: npm run seed   (WARNING: wipes users, requests, conversations, messages, sessions and credits)
+ * Usage: npm run seed   (WARNING: wipes users, requests, chats, sessions, credits and reviews)
  */
 const mongoose = require('mongoose');
 const env = require('../src/config/env');
@@ -10,6 +10,7 @@ const Conversation = require('../src/models/Conversation');
 const Message = require('../src/models/Message');
 const Session = require('../src/models/Session');
 const CreditTransaction = require('../src/models/CreditTransaction');
+const Review = require('../src/models/Review');
 const { WELCOME_CREDITS } = require('../src/config/constants');
 
 const PASSWORD = 'password123';
@@ -264,6 +265,7 @@ async function seed() {
     Message.deleteMany({}),
     Session.deleteMany({}),
     CreditTransaction.deleteMany({}),
+    Review.deleteMany({}),
   ]);
   // syncIndexes (not just init) also drops indexes the schemas no longer define,
   // e.g. the old unique index on Conversation.request.
@@ -275,6 +277,7 @@ async function seed() {
     Message,
     Session,
     CreditTransaction,
+    Review,
   ]) {
     await model.syncIndexes();
   }
@@ -417,9 +420,154 @@ async function seedSessionsAndCredits({ created, demo, riya, accepted, now }) {
     note: 'Café near FC Road? I will bring a spare guitar.',
   });
 
+  // Reviews. Demo hasn't reviewed the JavaScript lesson yet, so the demo account sees a
+  // "Leave a review" button in its session history.
+  const reviews = [];
+  const rate = (lesson, reviewer, reviewee, role, rating, comment, at) =>
+    reviews.push({
+      session: lesson._id,
+      reviewer: reviewer._id,
+      reviewee: reviewee._id,
+      role,
+      skill: { name: lesson.skill.name },
+      rating,
+      comment,
+      createdAt: new Date(at),
+      updatedAt: new Date(at),
+    });
+  rate(
+    lesson1,
+    demo,
+    riya,
+    'teacher',
+    5,
+    'So patient! I played my first full song after two lessons.',
+    now - 5 * day + 2 * 3600e3,
+  );
+  rate(
+    lesson1,
+    riya,
+    demo,
+    'learner',
+    5,
+    'Came prepared and practised between lessons. A joy to teach.',
+    now - 5 * day + 3 * 3600e3,
+  );
+  rate(
+    lesson2,
+    riya,
+    demo,
+    'teacher',
+    5,
+    'Explains JavaScript like a friend, not a textbook. Great examples.',
+    now - 3 * day + 2 * 3600e3,
+  );
+
+  // A few completed lessons between other members, so ratings show up across Explore and Matches.
+  const byName = new Map(created.map((u) => [u.name.split(' ')[0], u]));
+  const pastLessons = [
+    ['Kabir', 'Aisha', 'Python', 60, 5, 'Made Python finally click. Clear, practical and fun.', 9],
+    [
+      'Aisha',
+      'Kabir',
+      'UI Design',
+      60,
+      5,
+      'Brilliant eye for layout. My portfolio looks 10x better.',
+      8,
+    ],
+    ['Carlos', 'Emma', 'Spanish', 60, 5, '¡Excelente! Lots of real conversation practice.', 7],
+    [
+      'Carlos',
+      'Tom',
+      'Spanish',
+      90,
+      4,
+      'Very good teacher, though we sometimes went off topic.',
+      6,
+    ],
+    [
+      'Kenji',
+      'Lucas',
+      'Japanese',
+      60,
+      5,
+      'Hiragana in one session. Kenji is a natural teacher.',
+      5,
+    ],
+    [
+      'Grace',
+      'Arjun',
+      'Public Speaking',
+      60,
+      4,
+      'Useful drills and honest feedback on my talk.',
+      4,
+    ],
+    [
+      'Neha',
+      'Daniel',
+      'Personal Finance',
+      60,
+      3,
+      'Good content, but we ran over time and rushed the end.',
+      3,
+    ],
+  ];
+  for (const [
+    teacherName,
+    learnerName,
+    skillName,
+    minutes,
+    rating,
+    comment,
+    daysAgo,
+  ] of pastLessons) {
+    const teacher = byName.get(teacherName);
+    const learner = byName.get(learnerName);
+    const skill = teacher.skillsOffered.find((s) => s.name === skillName);
+    const at = now - daysAgo * day;
+    const swap = await SwapRequest.create({
+      from: learner._id,
+      to: teacher._id,
+      skill: { name: skill.name, category: skill.category, level: skill.level },
+      status: 'accepted',
+      respondedAt: new Date(at - 2 * day),
+    });
+    const lesson = await Session.create({
+      request: swap._id,
+      teacher: teacher._id,
+      learner: learner._id,
+      skill: { name: skill.name, category: skill.category, level: skill.level },
+      scheduledAt: new Date(at),
+      durationMinutes: minutes,
+      credits: minutes / 60,
+      mode: 'online',
+      proposedBy: learner._id,
+      status: 'completed',
+      confirmedBy: [teacher._id, learner._id],
+      completedAt: new Date(at + minutes * 60e3),
+    });
+    ledger(learner, -minutes / 60, 'session-hold', lesson._id, at - day);
+    ledger(teacher, minutes / 60, 'session-earned', lesson._id, at + minutes * 60e3);
+    rate(lesson, learner, teacher, 'teacher', rating, comment, at + 2 * 3600e3);
+  }
+
   await CreditTransaction.collection.insertMany(entries);
+  await Review.collection.insertMany(reviews);
+  // Reputation stats derived from the reviews above, like the app's $inc on each review.
+  const stats = new Map();
+  for (const r of reviews) {
+    const s = stats.get(String(r.reviewee)) ?? { count: 0, sum: 0 };
+    stats.set(String(r.reviewee), { count: s.count + 1, sum: s.sum + r.rating });
+  }
   await Promise.all(
-    [...balance].map(([id, credits]) => User.updateOne({ _id: id }, { $set: { credits } })),
+    [...balance].map(([id, credits]) =>
+      User.updateOne(
+        { _id: id },
+        { $set: { credits, reviewStats: stats.get(id) ?? { count: 0, sum: 0 } } },
+      ),
+    ),
   );
 }
 

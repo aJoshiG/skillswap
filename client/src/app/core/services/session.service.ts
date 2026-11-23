@@ -12,6 +12,7 @@ import {
   SessionScope,
   creditLabel,
 } from '../models/session.model';
+import { NewReview, Review } from '../models/review.model';
 import { AuthService } from './auth.service';
 import { SocketService } from './socket.service';
 import { ToastService } from './toast.service';
@@ -37,6 +38,15 @@ export class SessionService {
       this.changed.update((n) => n + 1);
       this.refresh();
     });
+    this.socket.on<Review>('review:new').subscribe((r) => {
+      this.toast.info(`${r.reviewer.name} left you a ${r.rating}★ review for ${r.skill.name}`);
+    });
+  }
+
+  review(sessionId: string, body: NewReview): Observable<Review> {
+    return this.http
+      .post<ApiResponse<Review>>(`${this.api}/${sessionId}/review`, body)
+      .pipe(map((res) => res.data));
   }
 
   propose(body: ProposeSession): Observable<Session> {

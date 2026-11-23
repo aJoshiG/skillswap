@@ -4,6 +4,7 @@ const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const emitter = require('../sockets/emitter');
 const credits = require('./credit.service');
+const reviews = require('./review.service');
 const { runInTransaction } = require('../utils/transaction');
 const { pageMeta } = require('../utils/pagination');
 
@@ -86,7 +87,14 @@ async function list(userId, { scope, page, limit }) {
     ),
     Session.countDocuments(filter),
   ]);
-  return { items, meta: pageMeta(page, limit, total) };
+  // Completed sessions carry my review (or null), so the UI can offer "Leave a review".
+  const completedIds = items.filter((s) => s.status === 'completed').map((s) => s._id);
+  const mine = await reviews.mineFor(userId, completedIds);
+  const withReviews = items.map((s) => ({
+    ...s.toJSON(),
+    ...(s.status === 'completed' ? { myReview: mine.get(String(s._id)) ?? null } : {}),
+  }));
+  return { items: withReviews, meta: pageMeta(page, limit, total) };
 }
 
 async function loadForAction(userId, id) {

@@ -3,7 +3,15 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse, Paged, PageMeta } from '../models/api.model';
-import { ExploreQuery, MatchedUser, ProfileUpdate, PublicUser, User } from '../models/user.model';
+import { Review } from '../models/review.model';
+import {
+  ExploreQuery,
+  MatchedUser,
+  ProfileUpdate,
+  PublicProfile,
+  PublicUser,
+  User,
+} from '../models/user.model';
 import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
@@ -31,8 +39,18 @@ export class UserService {
       .pipe(map((res) => ({ items: res.data, meta: res.meta as PageMeta })));
   }
 
-  getById(id: string): Observable<PublicUser> {
-    return this.http.get<ApiResponse<PublicUser>>(`${this.api}/${id}`).pipe(map((res) => res.data));
+  getById(id: string): Observable<PublicProfile> {
+    return this.http
+      .get<ApiResponse<PublicProfile>>(`${this.api}/${id}`)
+      .pipe(map((res) => res.data));
+  }
+
+  /** Reviews a user has received, newest first. */
+  reviews(id: string, page = 1, limit = 5): Observable<Paged<Review>> {
+    const params = new HttpParams().set('page', page).set('limit', limit);
+    return this.http
+      .get<ApiResponse<Review[]>>(`${this.api}/${id}/reviews`, { params })
+      .pipe(map((res) => ({ items: res.data, meta: res.meta as PageMeta })));
   }
 
   updateMe(update: ProfileUpdate): Observable<User> {

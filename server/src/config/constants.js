@@ -20,6 +20,9 @@ const WELCOME_CREDITS = 2;
 const SESSION_DURATIONS = [30, 60, 90, 120]; // minutes
 const SESSION_STATUS = ['proposed', 'scheduled', 'completed', 'declined', 'cancelled'];
 const CREDIT_TYPES = ['welcome', 'session-hold', 'session-refund', 'session-earned'];
+// Reputation: a Bayesian average pulls ratings with few reviews toward this prior, so one
+// 5-star review doesn't outrank a teacher with many 4.8s. New users count as the prior mean.
+const REVIEW_PRIOR = { mean: 4, weight: 3 };
 
 module.exports = {
   SKILL_LEVELS,
@@ -29,4 +32,5 @@ module.exports = {
   SESSION_DURATIONS,
   SESSION_STATUS,
   CREDIT_TYPES,
+  REVIEW_PRIOR,
 };

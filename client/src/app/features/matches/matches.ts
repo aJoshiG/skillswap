@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PageMeta, errorMessage } from '../../core/models/api.model';
-import { MatchedUser } from '../../core/models/user.model';
+import { MatchedUser, PublicUser, averageRating } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
 import { SocketService } from '../../core/services/socket.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -9,12 +9,13 @@ import { UserService } from '../../core/services/user.service';
 import { Avatar } from '../../shared/components/avatar';
 import { EmptyState } from '../../shared/components/empty-state';
 import { SkillChip } from '../../shared/components/skill-chip';
+import { Stars } from '../../shared/components/stars';
 
 type Kind = 'mutual' | 'teach-you' | 'learn-from-you';
 
 @Component({
   selector: 'app-matches',
-  imports: [RouterLink, Avatar, SkillChip, EmptyState],
+  imports: [RouterLink, Avatar, SkillChip, EmptyState, Stars],
   template: `
     <div class="page">
       <header class="mb-6">
@@ -104,6 +105,9 @@ type Kind = 'mutual' | 'teach-you' | 'learn-from-you';
                         </span>
                       }
                     </p>
+                    @if (rating(m); as r) {
+                      <app-stars [value]="r" [count]="m.reviewStats.count" />
+                    }
                   </div>
                 </div>
 
@@ -174,6 +178,9 @@ type Kind = 'mutual' | 'teach-you' | 'learn-from-you';
   `,
 })
 export class Matches {
+  /** Average rating for a card, or null when there are no reviews yet. */
+  protected readonly rating = (u: PublicUser) => averageRating(u.reviewStats);
+
   private readonly users = inject(UserService);
   private readonly toast = inject(ToastService);
   private readonly auth = inject(AuthService);

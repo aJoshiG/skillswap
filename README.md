@@ -31,9 +31,11 @@ find each other, send swap requests, and chat in real time once a request is acc
 | **Swap requests** | Request a specific skill and optionally offer one of yours in return. Self-requests and duplicate pending requests are blocked (checked in code and by a partial unique index). Received and sent inboxes with accept, decline and cancel. |
 | **Real-time chat** | Accepting a request opens a private room. Socket connections are JWT-authenticated and only participants can join. Messages persist in MongoDB with cursor pagination. Includes typing indicators, read receipts (✓ / ✓✓), online presence, unread badges and live toasts. |
 | **Sessions & time credits** | Schedule lessons from an accepted swap (in chat or on the Requests page): who teaches what, when, how long, online or in person. 1 hour of teaching = 1 credit, and new users start with 2. Accepting a session **holds** the learner's credits (escrow). Cancelling before it starts **refunds** them. Once both people confirm it happened, the teacher is **paid**. Every step runs in a **MongoDB transaction** and is written to an append-only ledger. Live updates over the socket, plus a navbar balance and an action badge. |
+| **Reviews & reputation** | After a completed session, both people can rate each other (1–5 stars, optional comment), once per session. Profiles show the average rating, sessions and hours taught, and the reviews. Explore and Matches cards show ratings, and **Matches ranks better-rated teachers higher** using a Bayesian average. Reviewees get a live notification. The star picker is accessible: real radio buttons, keyboard and screen readers. |
 
 ### Roadmap
-- **Reviews and reputation**, plus **real-time notifications**
+- **Real-time notifications** center (beyond the current live toasts)
+- Auto-resolve sessions nobody confirms (e.g. refund after 7 days)
 
 ---
 
@@ -86,6 +88,8 @@ erDiagram
   USER ||--o{ SESSION : "teaches / learns"
   USER ||--o{ CREDIT_TRANSACTION : "ledger"
   SESSION ||--o{ CREDIT_TRANSACTION : "hold / refund / pay"
+  SESSION ||--o{ REVIEW : "rated after completion"
+  USER ||--o{ REVIEW : "gives / receives"
   USER {
     string name
     string email
@@ -93,6 +97,7 @@ erDiagram
     Skill[] skillsOffered
     Skill[] skillsWanted
     number credits
+    object reviewStats
   }
   SWAP_REQUEST {
     ObjectId from
@@ -125,6 +130,7 @@ erDiagram
 - **Optimistic chat.** Sent messages appear immediately and are replaced by the saved copy when the server acknowledges them, de-duplicated against the broadcast echo.
 - **Matching in one aggregation pipeline.** `$match` (candidates) → `$addFields` (overlapping skills in each direction, meeting formats, score) → `$sort` → `$facet` (page + total in one round trip) → `$lookup` (open swaps, only for the page shown). The candidate filter uses case-insensitive **collation-aware indexes** on skill names, so it examines only real matches instead of scanning every user (checked with `explain()`).
 - **Credits are money-like, so every move is a transaction.** Holding, refunding and paying each update the balance (`User.credits`), the ledger (`CreditTransaction`) and the session status inside one MongoDB transaction: all or nothing. Spending is a conditional update ("only if the balance is at least this much"), so balances never go negative. Status changes are conditional too (`scheduled → completed` happens once), so the teacher is paid exactly once. Tests fire simultaneous accepts and confirms; MongoDB detects the write conflicts and retries, and the results stay correct. The ledger always adds up to the balance, and the tests check that.
+- **Reputation without race conditions or rating spam.** A review and the reviewee's stats (`$inc` on count and sum) are written in one transaction, so concurrent reviews can't lose updates. A unique index on (session, reviewer) rejects a second review, even one submitted at the same moment. Matching uses a **Bayesian average**: `(sum + 4×3) / (count + 3)` pulls ratings with few reviews toward a neutral prior, so one lucky 5★ doesn't outrank a teacher with twenty 4.8s, and new users aren't penalised. Teaching stats (sessions and hours) are computed from completed sessions, the source of truth, rather than stored counters.
 - **Consistent API.** Every response is `{ success, data, meta? }` or `{ success: false, error: { code, message, details? } }`, produced by one central error handler.
 
 ---
@@ -155,12 +161,14 @@ All routes are under `/api`. 🔒 = requires `Authorization: Bearer <accessToken
 | POST 🔒 | `/conversations/:id/read` | Mark the conversation as read |
 | POST 🔒 | `/sessions` | Propose a session `{ requestId, skill: requested\|offered, scheduledAt, durationMinutes, mode, note? }` |
 | GET 🔒 | `/sessions` | My sessions: `scope=active\|history, page, limit` |
+| POST 🔒 | `/sessions/:id/review` | Review the other person on a completed session `{ rating: 1–5, comment? }` |
+| GET 🔒 | `/users/:id/reviews` | Reviews a user received, `page, limit` |
 | PATCH 🔒 | `/sessions/:id/:action` | `accept` (holds credits) · `decline` · `cancel` (refunds) · `confirm` (pays when both have) |
 | GET 🔒 | `/credits` | Balance, held credits and the ledger, `page, limit` |
 
 **Socket events:** `conversation:join`, `conversation:leave`, `message:send`, `message:read`,
 `typing`, `presence:query` (client → server); `message:new`, `message:read`, `typing`,
-`conversation:updated`, `request:new`, `request:updated`, `session:updated`, `presence:update` (server → client).
+`conversation:updated`, `request:new`, `request:updated`, `session:updated`, `review:new`, `presence:update` (server → client).
 
 ---
 

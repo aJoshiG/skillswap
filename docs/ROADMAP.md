@@ -3,7 +3,7 @@
 Goal: a working, deployed MEAN-stack app (MongoDB, Express, Angular, Node) good enough to
 put on a resume and GitHub. Tick items off here as they're finished.
 
-**Next step:** Phase 3 extras (reviews and reputation after completed sessions, notifications), or Phase 4 polish (README screenshots/GIF, Playwright e2e in CI).
+**Next step:** Phase 4 polish: README screenshots/GIF, Playwright e2e suite in CI (from the scratch walkthrough scripts), accessibility pass. Optional: notifications center, auto-resolving unconfirmed sessions.
 
 ---
 
@@ -60,7 +60,12 @@ put on a resume and GitHub. Tick items off here as they're finished.
       and on Requests, navbar balance and action badge, live socket updates. `npm run db` gives local dev a
       replica set on :27018 without touching the Windows MongoDB service.
       Follow-ups: auto-resolve sessions nobody confirms (e.g. refund after 7 days), reviews after completion.
-- [ ] **Reviews and reputation.** Rate someone after a completed session, show the average on their profile.
+- [x] **Reviews and reputation** (2026-11-23). Rate each other after a completed session (once each,
+      unique index + transaction with `$inc` stats). Profiles: rating, sessions/hours taught (from completed
+      sessions), reviews list. Ratings on Explore/Matches; matching adds a Bayesian-average bonus. Accessible
+      star picker (radio buttons; fixed a stale-hover label bug found in a keyboard test). 6 server tests
+      + Stars unit tests. Also fixed: a router on /users with router.use(requireAuth) briefly locked the
+      public /users/meta, so a regression test now covers it.
 - [ ] **Avatar upload** to Cloudinary instead of pasting an image URL.
 - [ ] **Notifications.** A bell icon with live notifications over the existing socket.
 

@@ -1,10 +1,12 @@
 const mongoose = require('mongoose');
 const User = require('../models/User');
+const Session = require('../models/Session');
+const { REVIEW_PRIOR } = require('../config/constants');
 const ApiError = require('../utils/ApiError');
 const { pageMeta } = require('../utils/pagination');
 
 const PUBLIC_FIELDS =
-  'name bio avatarUrl location availability languages skillsOffered skillsWanted lastActiveAt createdAt';
+  'name bio avatarUrl location availability languages skillsOffered skillsWanted reviewStats lastActiveAt createdAt';
 
 async function getMe(userId) {
   const user = await User.findById(userId);
@@ -23,9 +25,20 @@ async function updateMe(userId, updates) {
 }
 
 async function getPublicProfile(userId) {
-  const user = await User.findById(userId).select(PUBLIC_FIELDS);
+  const [user, taught] = await Promise.all([
+    User.findById(userId).select(PUBLIC_FIELDS),
+    // Teaching record, from completed sessions (the source of truth, not a stored counter).
+    Session.aggregate([
+      { $match: { teacher: new mongoose.Types.ObjectId(String(userId)), status: 'completed' } },
+      { $group: { _id: null, sessions: { $sum: 1 }, minutes: { $sum: '$durationMinutes' } } },
+    ]),
+  ]);
   if (!user) throw ApiError.notFound('User not found');
-  return user;
+  const t = taught[0];
+  return {
+    ...user.toJSON(),
+    teaching: { sessions: t?.sessions ?? 0, hours: (t?.minutes ?? 0) / 60 },
+  };
 }
 
 function escapeRegex(value) {
@@ -82,6 +95,15 @@ const SCORE = {
   teacherLevel: { expert: 5, intermediate: 2, beginner: 0 }, // per skill they can teach you
   inPerson: 10, // same city, and both of you meet in person
   online: 5, // both of you swap online
+  rating: 10, // per star of Bayesian-average rating above (or below) the prior mean
+};
+
+/** Bayesian average rating: (sum + prior mean × weight) / (count + weight). */
+const bayesianRating = {
+  $divide: [
+    { $add: [{ $ifNull: ['$reviewStats.sum', 0] }, REVIEW_PRIOR.mean * REVIEW_PRIOR.weight] },
+    { $add: [{ $ifNull: ['$reviewStats.count', 0] }, REVIEW_PRIOR.weight] },
+  ],
 };
 
 const normalize = (skills) => [...new Set(skills.map((s) => s.name.trim().toLowerCase()))];
@@ -185,6 +207,7 @@ async function matches(currentUserId, { page, limit }) {
             },
             { $cond: ['$canMeetInPerson', SCORE.inPerson, 0] },
             { $cond: ['$canMeetOnline', SCORE.online, 0] },
+            { $multiply: [SCORE.rating, { $subtract: [bayesianRating, REVIEW_PRIOR.mean] }] },
           ],
         },
       },

@@ -67,4 +67,13 @@ describe('Profiles & Explore', () => {
     expect(paged.body.data).toHaveLength(1);
     expect(paged.body.meta).toMatchObject({ page: 2, limit: 1, total: 2, totalPages: 2 });
   });
+
+  it('keeps /users/meta public while other /users routes need login', async () => {
+    // Regression: a router mounted on /users with router.use(requireAuth) once locked this.
+    const meta = await api().get('/api/users/meta').expect(200);
+    expect(meta.body.data.categories).toContain('music');
+    await api().get('/api/users').expect(401);
+    await api().get('/api/users/matches').expect(401);
+    await api().get('/api/users/000000000000000000000000/reviews').expect(401);
+  });
 });

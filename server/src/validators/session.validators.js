@@ -28,4 +28,9 @@ const respondParams = z.object({
 
 const creditsQuery = z.object({ ...pageQuery });
 
-module.exports = { create, list, respondParams, creditsQuery };
+const review = z.object({
+  rating: z.number().int('Rating must be a whole number of stars').min(1).max(5),
+  comment: z.string().trim().max(500).default(''),
+});
+
+module.exports = { create, list, respondParams, creditsQuery, review };
